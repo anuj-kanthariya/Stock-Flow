@@ -52,7 +52,7 @@ export default function AuthCallback() {
         }
       } catch (err: any) {
         console.error("OAuth callback error:", err);
-        setError(err.message || "Authentication failed. Please try again.");
+        setError("Unable to complete Google sign-in. Please try again.");
       }
     };
     

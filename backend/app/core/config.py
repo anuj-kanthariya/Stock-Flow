@@ -38,12 +38,10 @@ class Settings(BaseSettings):
     REFRESH_TOKEN_EXPIRE_DAYS: int = 30
 
     # CORS
-    ALLOWED_ORIGINS: List[str] = [
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "https://stockflow.app",
-    ]
+    ALLOWED_ORIGINS: List[str] = os.getenv(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,https://stockflow.app,https://stock-flow-three-eta.vercel.app"
+    ).split(",")
 
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20

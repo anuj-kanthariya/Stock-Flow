@@ -3,7 +3,7 @@ import type { Product, PaginatedResponse } from '@/types';
 
 // Get base URL without the /api/v1 prefix
 const getBackendHost = () => {
-  const baseURL = (import.meta as any).env.VITE_API_URL || 'http://localhost:8000/api/v1';
+  const baseURL = (import.meta as any).env.VITE_API_URL || '/api/v1';
   return baseURL.replace(/\/api\/v1\/?$/, '');
 };
 

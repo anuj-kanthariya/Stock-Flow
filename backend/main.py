@@ -20,8 +20,12 @@ from app.routers import (
     google,
 )
 
-# Ensure uploads directory exists
-os.makedirs("uploads/products", exist_ok=True)
+# Conditionally ensure uploads directory exists
+# In serverless environments like Vercel, the filesystem is often read-only, so we skip this.
+try:
+    os.makedirs("uploads/products", exist_ok=True)
+except OSError:
+    pass
 
 
 app = FastAPI(
@@ -56,7 +60,11 @@ app.add_middleware(
 app.add_middleware(LoggingMiddleware)
 
 # ─── Static Files ─────────────────────────────────────────────────────────────
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+try:
+    if os.path.exists("uploads"):
+        app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+except Exception:
+    pass
 
 # ─── Routers ─────────────────────────────────────────────────────────────────
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Authentication"])
@@ -82,4 +90,4 @@ async def root():
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
-    return {"status": "healthy", "service": settings.APP_NAME}
+    return {"status": "ok"}
