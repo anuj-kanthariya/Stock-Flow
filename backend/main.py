@@ -41,6 +41,9 @@ app = FastAPI(
 async def db_schema_migration():
     from app.database.database import engine
     from sqlalchemy import text
+    if not engine:
+        print("Skipping DB migration: Database engine is not initialized.")
+        return
     try:
         async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS show_in_main_list BOOLEAN DEFAULT FALSE;"))

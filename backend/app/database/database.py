@@ -5,23 +5,26 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import DeclarativeBase
 from app.core.config import settings
 
-# ─── Engine ──────────────────────────────────────────────────────────────────
-engine = create_async_engine(
-    settings.DATABASE_URL,
-    echo=settings.DEBUG,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
-)
-
-# ─── Session Factory ──────────────────────────────────────────────────────────
-AsyncSessionLocal = async_sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False,
-    autocommit=False,
-    autoflush=False,
-)
+# ─── Engine & Session Factory ──────────────────────────────────────────────────
+if not settings.DATABASE_URL:
+    print("WARNING: DATABASE_URL is not set. Database operations will fail.")
+    engine = None
+    AsyncSessionLocal = None
+else:
+    engine = create_async_engine(
+        settings.DATABASE_URL,
+        echo=settings.DEBUG,
+        pool_pre_ping=True,
+        pool_size=10,
+        max_overflow=20,
+    )
+    AsyncSessionLocal = async_sessionmaker(
+        bind=engine,
+        class_=AsyncSession,
+        expire_on_commit=False,
+        autocommit=False,
+        autoflush=False,
+    )
 
 
 # ─── Declarative Base ─────────────────────────────────────────────────────────
@@ -32,6 +35,8 @@ class Base(DeclarativeBase):
 # ─── Dependency ───────────────────────────────────────────────────────────────
 async def get_db() -> AsyncSession:
     """FastAPI dependency that provides a database session per request."""
+    if not AsyncSessionLocal:
+        raise RuntimeError("Database is not configured. Missing DATABASE_URL.")
     async with AsyncSessionLocal() as session:
         try:
             yield session
