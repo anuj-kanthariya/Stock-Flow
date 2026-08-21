@@ -7,6 +7,11 @@ from app.core.config import settings
 from app.middleware.logging import LoggingMiddleware
 import os
 from fastapi.staticfiles import StaticFiles
+from fastapi.responses import JSONResponse
+from sqlalchemy.exc import SQLAlchemyError
+import logging
+
+logger = logging.getLogger(__name__)
 from app.routers import (
     auth,
     users,
@@ -42,13 +47,14 @@ async def db_schema_migration():
     from app.database.database import engine
     from sqlalchemy import text
     if not engine:
-        print("Skipping DB migration: Database engine is not initialized.")
+        logger.warning("Skipping DB migration: Database engine is not initialized (DATABASE_URL missing).")
         return
     try:
         async with engine.begin() as conn:
             await conn.execute(text("ALTER TABLE customers ADD COLUMN IF NOT EXISTS show_in_main_list BOOLEAN DEFAULT FALSE;"))
     except Exception as e:
-        print("Schema migration error/warning:", e)
+        logger.exception("FATAL: Schema migration failed during startup.")
+        raise
 
 # ─── CORS ─────────────────────────────────────────────────────────────────────
 app.add_middleware(
@@ -58,6 +64,15 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# ─── Exception Handlers ───────────────────────────────────────────────────────
+@app.exception_handler(SQLAlchemyError)
+async def sqlalchemy_exception_handler(request, exc: SQLAlchemyError):
+    logger.exception("Database error occurred while processing request to %s", request.url.path)
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "A server error occurred while accessing the database. Please try again later."}
+    )
 
 # ─── Custom Middleware ────────────────────────────────────────────────────────
 app.add_middleware(LoggingMiddleware)
