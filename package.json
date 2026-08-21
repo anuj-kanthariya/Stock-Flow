@@ -1,0 +1,7 @@
+{
+  "name": "stockflow",
+  "private": true,
+  "scripts": {
+    "build": "cd frontend && npm install && npm run build && cd .. && rm -rf dist && mv frontend/dist dist"
+  }
+}
