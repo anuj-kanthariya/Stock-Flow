@@ -36,7 +36,8 @@ class Base(DeclarativeBase):
 async def get_db() -> AsyncSession:
     """FastAPI dependency that provides a database session per request."""
     if not AsyncSessionLocal:
-        raise RuntimeError("Database is not configured. Missing DATABASE_URL.")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=500, detail="Database is not configured. Missing DATABASE_URL.")
     async with AsyncSessionLocal() as session:
         try:
             yield session
