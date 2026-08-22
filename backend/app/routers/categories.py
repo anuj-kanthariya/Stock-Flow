@@ -189,7 +189,7 @@ async def delete_category(
     if not category:
         raise HTTPException(status_code=404, detail="Category not found")
 
-    category.is_active = False
+    await db.delete(category)
     await db.commit()
     
     return None

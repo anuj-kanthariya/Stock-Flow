@@ -16,6 +16,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/shared/InvoiceStatusBadge";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
+import { getCurrentUserProfile, updateCurrentUserProfile } from "@/lib/api/users";
 
 export default function ProfilePage() {
   const { user, checkAuth } = useAuth();
@@ -51,24 +52,18 @@ export default function ProfilePage() {
 
       setEmail(user.email || "");
 
-      const { data: profile, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, mobile_number, shop_name, role, avatar_url")
-        .eq("id", user.id)
-        .single();
+      const profile = await getCurrentUserProfile();
 
-      console.log("Fetched profile from DB:", profile);
-
-      if (error) throw error;
+      console.log("Fetched profile from API:", profile);
 
       // Map values
       // If DB has no name, try Google auth metadata
       const authMetadata = (await supabase.auth.getUser()).data.user?.user_metadata;
       
-      const resolvedName = profile.full_name || authMetadata?.full_name || authMetadata?.name || user.email?.split("@")[0] || "User";
+      const resolvedName = profile.name || authMetadata?.full_name || authMetadata?.name || user.email?.split("@")[0] || "User";
       setName(resolvedName);
       
-      setPhone(profile.mobile_number || "");
+      setPhone(profile.phone || profile.mobile_number || "");
       
       const resolvedRole = profile.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : "User";
       setRole(resolvedRole);
@@ -93,16 +88,11 @@ export default function ProfilePage() {
     if (!user) return;
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from("profiles")
-        .update({
-          full_name: name,
-          mobile_number: phone || null,
-        })
-        .eq("id", user.id);
+      await updateCurrentUserProfile({
+        name: name,
+        phone: phone || undefined,
+      });
 
-      if (error) throw error;
-      
       toast.success("Profile updated successfully!");
       checkAuth(); // Refresh global auth state if needed
       await fetchProfile();

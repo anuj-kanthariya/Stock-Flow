@@ -38,7 +38,26 @@ class User(Base):
     __tablename__ = "profiles"
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    email: Mapped[Optional[str]] = mapped_column(String(255), unique=True, nullable=True, index=True)
     name: Mapped[str] = mapped_column("full_name", String(100), nullable=False)
+    company_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    phone: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    gst_number: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
+    business_address: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    company_logo_url: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    profile_completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    
+    # Invoice preferences
+    invoice_prefix: Mapped[str] = mapped_column(String(20), default="INV", nullable=False)
+    invoice_numbering_preference: Mapped[str] = mapped_column(String(20), default="sequential", nullable=False)
+    payment_terms: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
+    tax_settings: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    
+    # Optional fields
+    website: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    upi_id: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    bank_details: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
     mobile_number: Mapped[Optional[str]] = mapped_column(String(20), unique=True, nullable=True, index=True)
     shop_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     role: Mapped[str] = mapped_column(
@@ -117,7 +136,7 @@ class Category(Base):
 
     # Relationships
     owner: Mapped["User"] = relationship(back_populates="categories")
-    products: Mapped[List["Product"]] = relationship(back_populates="category")
+    products: Mapped[List["Product"]] = relationship(back_populates="category", passive_deletes=True)
 
 
 # ─── Product ──────────────────────────────────────────────────────────────────
@@ -129,7 +148,7 @@ class Product(Base):
     name: Mapped[str] = mapped_column(String(200), nullable=False, index=True)
     sku: Mapped[Optional[str]] = mapped_column(String(100), unique=True, nullable=True, index=True)
     barcode: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True)
-    category_id: Mapped[str] = mapped_column(ForeignKey("categories.id"), nullable=False)
+    category_id: Mapped[str] = mapped_column(ForeignKey("categories.id", ondelete="CASCADE"), nullable=False)
     purchase_price: Mapped[Optional[Decimal]] = mapped_column(Numeric(12, 2), nullable=True)
     selling_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     gst_percentage: Mapped[Optional[Decimal]] = mapped_column(Numeric(5, 2), nullable=True, default=18)
@@ -148,8 +167,8 @@ class Product(Base):
     # Relationships
     owner: Mapped["User"] = relationship(back_populates="products")
     category: Mapped["Category"] = relationship(back_populates="products")
-    invoice_items: Mapped[List["InvoiceItem"]] = relationship(back_populates="product")
-    stock_transactions: Mapped[List["StockTransaction"]] = relationship(back_populates="product")
+    invoice_items: Mapped[List["InvoiceItem"]] = relationship(back_populates="product", passive_deletes=True)
+    stock_transactions: Mapped[List["StockTransaction"]] = relationship(back_populates="product", passive_deletes=True)
 
 
 # ─── Customer ─────────────────────────────────────────────────────────────────
@@ -181,9 +200,12 @@ class Customer(Base):
 # ─── Invoice ──────────────────────────────────────────────────────────────────
 class Invoice(Base):
     __tablename__ = "invoices"
+    __table_args__ = (
+        UniqueConstraint("created_by", "invoice_number", name="uix_invoice_user_number"),
+    )
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    invoice_number: Mapped[str] = mapped_column(String(50), unique=True, nullable=False, index=True)
+    invoice_number: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     customer_id: Mapped[str] = mapped_column(ForeignKey("customers.id"), nullable=False)
     created_by: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id"), nullable=False)
     subtotal: Mapped[Decimal] = mapped_column(Numeric(14, 2), default=0)
@@ -221,7 +243,8 @@ class InvoiceItem(Base):
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
     invoice_id: Mapped[str] = mapped_column(ForeignKey("invoices.id"), nullable=False)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), nullable=False)
+    product_id: Mapped[Optional[str]] = mapped_column(ForeignKey("products.id", ondelete="SET NULL"), nullable=True)
+    product_name: Mapped[Optional[str]] = mapped_column(String(200), nullable=True)
     quantity: Mapped[int] = mapped_column(Integer, nullable=False)
     unit_price: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     discount: Mapped[Decimal] = mapped_column(Numeric(5, 2), default=0)
@@ -233,7 +256,9 @@ class InvoiceItem(Base):
     product: Mapped["Product"] = relationship(back_populates="invoice_items")
 
     @property
-    def product_name(self) -> str:
+    def get_product_name(self) -> str:
+        if self.product_name:
+            return self.product_name
         return self.product.name if self.product else ""
 
 
@@ -242,7 +267,7 @@ class StockTransaction(Base):
     __tablename__ = "stock_transactions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
-    product_id: Mapped[str] = mapped_column(ForeignKey("products.id"), nullable=False)
+    product_id: Mapped[str] = mapped_column(ForeignKey("products.id", ondelete="CASCADE"), nullable=False)
     type: Mapped[str] = mapped_column(
         SAEnum("purchase", "sale", "adjustment", "return", name="transaction_type"),
         nullable=False,
@@ -276,3 +301,18 @@ class AppSettings(Base):
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
+
+
+# ─── Invoice Sequence ─────────────────────────────────────────────────────────
+class InvoiceSequence(Base):
+    __tablename__ = "invoice_sequences"
+    __table_args__ = (
+        UniqueConstraint("user_id", "invoice_date", name="uix_invoice_sequence_user_date"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=gen_uuid)
+    user_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False)
+    invoice_date: Mapped[str] = mapped_column(String(10), nullable=False) # Format: YYMMDD
+    last_number: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=utcnow, onupdate=utcnow)

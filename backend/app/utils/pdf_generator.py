@@ -51,10 +51,30 @@ def generate_invoice_pdf(invoice: Invoice) -> io.BytesIO:
     )
     normal_style = styles['Normal']
     
-    # Header
-    elements.append(Paragraph("StockFlow", title_style))
-    elements.append(Paragraph("Wholesale Manager", subtitle_style))
-    elements.append(Spacer(1, 0.2 * inch))
+    # Header (Company Info)
+    owner = invoice.created_by_user
+    company_name = owner.company_name if owner and owner.company_name else "My Business"
+    
+    # We could add the logo here if we had the path, but since images can be URLs or local, 
+    # and ReportLab requires actual file paths or accessible URLs, we'll keep it text-based for now.
+    # The requirement said "[LOGO] ANUJ'S SHOP", we will just print the text prominently as the business identity.
+    elements.append(Paragraph(company_name.upper(), title_style))
+    
+    if owner and owner.business_address:
+        elements.append(Paragraph(owner.business_address, subtitle_style))
+    else:
+        elements.append(Spacer(1, 0.2 * inch))
+    
+    # Add contact info below if needed
+    contact_info = []
+    if owner and owner.phone: contact_info.append(owner.phone)
+    if owner and owner.email: contact_info.append(owner.email)
+    if owner and owner.gst_number: contact_info.append(f"GST: {owner.gst_number}")
+    
+    if contact_info:
+        elements.append(Paragraph(" | ".join(contact_info), subtitle_style))
+    else:
+        elements.append(Spacer(1, 0.2 * inch))
     
     # Invoice Details Table
     inv_date = invoice.created_at.strftime("%d %b %Y") if invoice.created_at else "N/A"

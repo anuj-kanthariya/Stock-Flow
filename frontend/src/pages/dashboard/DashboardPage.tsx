@@ -39,13 +39,16 @@ import {
   Legend,
 } from "recharts";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function DashboardPage() {
+  const { user } = useAuth();
+  
   return (
     <div className="space-y-6">
       <PageHeader
         title="Dashboard"
-        description="Welcome back, Mukti! Here's what's happening today."
+        description={`Welcome back, ${user?.name ? user.name.split(" ")[0] : "User"}! Here's what's happening today.`}
         breadcrumbs={[{ label: "Dashboard" }]}
         actions={
           <Button asChild>

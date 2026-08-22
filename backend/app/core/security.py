@@ -61,12 +61,18 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-from supabase import create_client, Client
+from supabase import create_async_client, AsyncClient
 
-supabase: Client = create_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+_async_supabase: Optional[AsyncClient] = None
 
-async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
-    """FastAPI dependency: extract user UUID from Supabase Bearer token."""
+async def get_async_supabase_client() -> AsyncClient:
+    global _async_supabase
+    if _async_supabase is None:
+        _async_supabase = await create_async_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
+    return _async_supabase
+
+async def get_supabase_user(token: str = Depends(oauth2_scheme)) -> dict:
+    """FastAPI dependency: validate token and extract user details from Supabase."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -74,13 +80,19 @@ async def get_current_user_id(token: str = Depends(oauth2_scheme)) -> str:
     )
     
     try:
-        # Validate token against Supabase Auth service
-        user_response = supabase.auth.get_user(token)
+        # Validate token against Supabase Auth service asynchronously to prevent event loop blocking
+        client = await get_async_supabase_client()
+        user_response = await client.auth.get_user(token)
         
         if not user_response or not user_response.user:
             raise credentials_exception
             
-        return user_response.user.id
+        return {
+            "id": user_response.user.id,
+            "email": user_response.user.email,
+            "full_name": user_response.user.user_metadata.get("full_name", ""),
+            "avatar_url": user_response.user.user_metadata.get("avatar_url", ""),
+        }
     except Exception as e:
         print(f"Auth error: {e}")
         raise credentials_exception

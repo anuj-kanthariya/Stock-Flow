@@ -87,17 +87,25 @@ async def create_invoice(
             products_result = await db.execute(select(Product).where(Product.id.in_(product_ids), Product.owner_id == current_user.id))
             products = {p.id: p for p in products_result.scalars().all()}
 
-            # Generate invoice number safely using max sequence instead of count
+            # Generate invoice number securely using isolated sequence
+            from sqlalchemy.dialects.postgresql import insert as pg_insert
+            from app.models.models import InvoiceSequence
+            
             today = datetime.now()
-            prefix = f"INV-{today.strftime('%y%m%d')}"
-            stmt = select(Invoice.invoice_number).where(Invoice.invoice_number.like(f"{prefix}%")).order_by(desc(Invoice.invoice_number)).limit(1)
-            last_invoice = await db.scalar(stmt)
-            if last_invoice:
-                last_seq = int(last_invoice.split('-')[-1])
-                next_seq = last_seq + 1
-            else:
-                next_seq = 1
-            invoice_number = f"{prefix}-{next_seq:04d}"
+            date_str = today.strftime('%y%m%d')
+            prefix = f"INV-{date_str}"
+            
+            stmt = pg_insert(InvoiceSequence).values(
+                user_id=current_user.id,
+                invoice_date=date_str,
+                last_number=1
+            ).on_conflict_do_update(
+                index_elements=["user_id", "invoice_date"],
+                set_={"last_number": InvoiceSequence.last_number + 1}
+            ).returning(InvoiceSequence.last_number)
+            
+            last_seq = await db.scalar(stmt)
+            invoice_number = f"{prefix}-{last_seq:04d}"
 
             subtotal = Decimal("0")
             invoice_items = []
@@ -120,6 +128,7 @@ async def create_invoice(
                 invoice_items.append(
                     InvoiceItem(
                         product_id=product.id,
+                        product_name=product.name,
                         quantity=item.quantity,
                         unit_price=unit_price,
                         discount=line_discount,
@@ -338,6 +347,7 @@ async def put_invoice(
         invoice_items.append(
             InvoiceItem(
                 product_id=product.id,
+                product_name=product.name,
                 quantity=item.quantity,
                 unit_price=unit_price,
                 discount=line_discount,
@@ -414,6 +424,32 @@ async def delete_invoice(
 
 
 @router.get("/{invoice_id}/pdf")
-async def download_invoice_pdf(invoice_id: str):
+async def download_invoice_pdf(
+    invoice_id: str,
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db)
+):
     """Generate and return invoice PDF."""
-    raise NotImplementedError
+    stmt = (
+        select(Invoice)
+        .options(
+            selectinload(Invoice.customer),
+            selectinload(Invoice.items).selectinload(InvoiceItem.product),
+            selectinload(Invoice.created_by_user)
+        )
+        .where(Invoice.id == invoice_id, Invoice.created_by == current_user.id)
+    )
+    result = await db.execute(stmt)
+    invoice = result.scalar_one_or_none()
+    
+    if not invoice:
+        raise HTTPException(status_code=404, detail="Invoice not found")
+        
+    pdf_buffer = generate_invoice_pdf(invoice)
+    pdf_buffer.seek(0)
+    
+    return StreamingResponse(
+        pdf_buffer,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={invoice.invoice_number}.pdf"}
+    )

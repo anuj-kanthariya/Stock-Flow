@@ -48,7 +48,7 @@ class VerifyOtpRequest(BaseModel):
 class UserBase(BaseModel):
     name: str = Field(..., min_length=2, max_length=100)
     shop_name: Optional[str] = Field(None, max_length=100)
-    mobile_number: str = Field(..., min_length=10, max_length=15)
+    mobile_number: Optional[str] = Field(None, min_length=10, max_length=15)
     role: str = Field(default="staff", pattern="^(owner|staff)$")
 
 
@@ -58,12 +58,41 @@ class UserCreate(UserBase):
 
 class UserUpdate(BaseModel):
     name: Optional[str] = Field(None, min_length=2, max_length=100)
+    email: Optional[str] = None
+    company_name: Optional[str] = None
+    phone: Optional[str] = None
+    gst_number: Optional[str] = None
+    business_address: Optional[str] = None
+    company_logo_url: Optional[str] = None
+    invoice_prefix: Optional[str] = None
+    invoice_numbering_preference: Optional[str] = None
+    payment_terms: Optional[str] = None
+    tax_settings: Optional[str] = None
+    website: Optional[str] = None
+    upi_id: Optional[str] = None
+    bank_details: Optional[str] = None
     mobile_number: Optional[str] = Field(None, min_length=10, max_length=15)
     avatar_url: Optional[str] = None
 
 
+from uuid import UUID
+
 class UserResponse(UserBase):
-    id: str
+    id: UUID
+    email: Optional[str] = None
+    company_name: Optional[str] = None
+    phone: Optional[str] = None
+    gst_number: Optional[str] = None
+    business_address: Optional[str] = None
+    company_logo_url: Optional[str] = None
+    profile_completed: bool = False
+    invoice_prefix: str
+    invoice_numbering_preference: str
+    payment_terms: Optional[str] = None
+    tax_settings: Optional[str] = None
+    website: Optional[str] = None
+    upi_id: Optional[str] = None
+    bank_details: Optional[str] = None
     avatar_url: Optional[str]
     is_active: bool
     created_at: datetime
@@ -263,12 +292,18 @@ class InvoiceItemCreate(BaseModel):
 
 class InvoiceItemResponse(BaseModel):
     id: str
-    product_id: str
-    product_name: str
+    product_id: Optional[str]
+    product_name: Optional[str]
     quantity: int
     unit_price: Decimal
     discount: Decimal
     total: Decimal
+
+    @field_validator('product_name', mode='before')
+    def validate_product_name(cls, v, info):
+        if not v:
+            return "Unknown Product"
+        return v
 
     model_config = {"from_attributes": True}
 

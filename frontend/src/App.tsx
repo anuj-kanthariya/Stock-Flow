@@ -11,6 +11,9 @@ import VerifyEmailPage from "@/pages/auth/VerifyEmailPage";
 import ConfirmEmailPage from "@/pages/auth/ConfirmEmailPage";
 import ResetPasswordPage from "@/pages/auth/ResetPasswordPage";
 
+// Landing Page
+import LandingPage from "@/pages/landing/LandingPage";
+
 // App Pages
 import DashboardPage from "@/pages/dashboard/DashboardPage";
 import ProductsPage from "@/pages/products/ProductsPage";
@@ -53,7 +56,7 @@ const PublicRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const RootRoute = () => {
-  return <Navigate to="/auth" replace />;
+  return <LandingPage />;
 };
 
 function AppRoutes() {

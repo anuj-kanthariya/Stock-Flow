@@ -1,0 +1,468 @@
+/* ════════════════════════════════════════════════════════
+   StockFlow Landing Page — Dedicated Styles
+   ════════════════════════════════════════════════════════ */
+
+/* ── Landing Dark Theme ─────────────────────────────────── */
+.landing-page {
+  --lp-bg: #0D0D0D;
+  --lp-card: #171717;
+  --lp-card-secondary: #1D1D1D;
+  --lp-accent: hsl(29, 68%, 47%);
+  --lp-accent-light: hsl(29, 68%, 55%);
+  --lp-accent-glow: hsla(29, 68%, 47%, 0.15);
+  --lp-text: #FFFFFF;
+  --lp-text-muted: #A1A1AA;
+  --lp-text-dim: #71717A;
+  --lp-border: rgba(255, 255, 255, 0.08);
+  --lp-border-accent: rgba(255, 255, 255, 0.12);
+
+  background-color: var(--lp-bg);
+  color: var(--lp-text);
+  font-family: "Inter", system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+/* ── Section Container ──────────────────────────────────── */
+.lp-section {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 80px 24px;
+}
+
+@media (max-width: 768px) {
+  .lp-section {
+    padding: 56px 16px;
+  }
+}
+
+/* ── Scroll Reveal Animation ────────────────────────────── */
+.lp-reveal {
+  opacity: 0;
+  transform: translateY(32px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lp-reveal.revealed {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Staggered children */
+.lp-reveal-delay-1 { transition-delay: 0.1s; }
+.lp-reveal-delay-2 { transition-delay: 0.2s; }
+.lp-reveal-delay-3 { transition-delay: 0.3s; }
+.lp-reveal-delay-4 { transition-delay: 0.4s; }
+.lp-reveal-delay-5 { transition-delay: 0.5s; }
+.lp-reveal-delay-6 { transition-delay: 0.6s; }
+
+/* ── Floating Dashboard Preview ─────────────────────────── */
+@keyframes lp-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.lp-float {
+  animation: lp-float 6s ease-in-out infinite;
+}
+
+/* ── Navbar ─────────────────────────────────────────────── */
+.lp-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  padding: 16px 24px;
+  transition: background-color 0.3s ease, backdrop-filter 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lp-navbar.scrolled {
+  background-color: rgba(13, 13, 13, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 1px 0 var(--lp-border);
+}
+
+/* ── Landing Card ───────────────────────────────────────── */
+.lp-card {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 16px;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+}
+
+.lp-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  border-color: var(--lp-border-accent);
+}
+
+/* ── Feature Card Icon Container ────────────────────────── */
+.lp-icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--lp-accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.3s ease, transform 0.3s ease;
+}
+
+.lp-card:hover .lp-icon-box {
+  background: hsla(29, 68%, 47%, 0.25);
+  transform: scale(1.1);
+}
+
+/* ── Timeline ───────────────────────────────────────────── */
+.lp-timeline {
+  display: flex;
+  align-items: flex-start;
+  gap: 0;
+  position: relative;
+}
+
+.lp-timeline-step {
+  flex: 1;
+  text-align: center;
+  position: relative;
+  padding: 0 12px;
+}
+
+.lp-timeline-connector {
+  position: absolute;
+  top: 24px;
+  left: calc(50% + 28px);
+  right: calc(-50% + 28px);
+  height: 2px;
+  background: linear-gradient(90deg, var(--lp-accent), var(--lp-border));
+}
+
+.lp-timeline-step:last-child .lp-timeline-connector {
+  display: none;
+}
+
+.lp-timeline-dot {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--lp-accent);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 16px;
+  margin: 0 auto 16px;
+  position: relative;
+  z-index: 2;
+  box-shadow: 0 0 20px var(--lp-accent-glow);
+}
+
+@media (max-width: 768px) {
+  .lp-timeline {
+    flex-direction: column;
+    gap: 32px;
+  }
+
+  .lp-timeline-step {
+    text-align: left;
+    display: flex;
+    gap: 16px;
+    padding: 0;
+  }
+
+  .lp-timeline-dot {
+    margin: 0;
+    flex-shrink: 0;
+  }
+
+  .lp-timeline-connector {
+    left: 23px;
+    top: 48px;
+    right: auto;
+    width: 2px;
+    height: calc(100% + 32px);
+    background: linear-gradient(180deg, var(--lp-accent), var(--lp-border));
+  }
+}
+
+/* ── Dashboard Mockup ───────────────────────────────────── */
+.lp-mockup {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lp-mockup-topbar {
+  height: 32px;
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid var(--lp-border);
+  display: flex;
+  align-items: center;
+  padding: 0 12px;
+  gap: 6px;
+}
+
+.lp-mockup-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.lp-mockup-dot.red { background: #ef4444; }
+.lp-mockup-dot.yellow { background: #f59e0b; }
+.lp-mockup-dot.green { background: #22c55e; }
+
+/* ── Stat Mini Card ─────────────────────────────────────── */
+.lp-stat-mini {
+  background: var(--lp-card-secondary);
+  border: 1px solid var(--lp-border);
+  border-radius: 10px;
+  padding: 14px;
+}
+
+/* ── Security Diagram ───────────────────────────────────── */
+.lp-security-card {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 12px;
+  padding: 20px;
+  min-width: 180px;
+}
+
+.lp-lock-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--lp-accent), hsl(15, 70%, 40%));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 32px var(--lp-accent-glow);
+}
+
+/* ── CTA Section ────────────────────────────────────────── */
+.lp-cta-section {
+  background: linear-gradient(135deg, rgba(29, 29, 29, 1) 0%, rgba(23, 23, 23, 1) 100%);
+  border: 1px solid var(--lp-border);
+  border-radius: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.lp-cta-section::before {
+  content: "";
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 40%, var(--lp-accent-glow) 0%, transparent 50%);
+  pointer-events: none;
+}
+
+/* ── Invoice Mockup ─────────────────────────────────────── */
+.lp-invoice-mockup {
+  background: var(--lp-card);
+  border: 1px solid var(--lp-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.lp-invoice-header {
+  background: linear-gradient(135deg, var(--lp-accent), hsl(20, 60%, 35%));
+  padding: 20px;
+  color: white;
+}
+
+.lp-invoice-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  padding: 10px 20px;
+  border-bottom: 1px solid var(--lp-border);
+  font-size: 13px;
+}
+
+.lp-invoice-row.header {
+  background: rgba(255, 255, 255, 0.03);
+  font-weight: 600;
+  color: var(--lp-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Inventory Table Mockup ─────────────────────────────── */
+.lp-inventory-row {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--lp-border);
+  font-size: 13px;
+  align-items: center;
+}
+
+.lp-inventory-row.header {
+  background: rgba(255, 255, 255, 0.03);
+  font-weight: 600;
+  color: var(--lp-text-muted);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 640px) {
+  .lp-invoice-row {
+    grid-template-columns: 1.5fr 1fr 1fr;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .lp-invoice-row .hide-mobile {
+    display: none;
+  }
+
+  .lp-inventory-row {
+    grid-template-columns: 1.5fr 1fr 1fr;
+    font-size: 12px;
+    padding: 8px 12px;
+  }
+  .lp-inventory-row .hide-mobile {
+    display: none;
+  }
+}
+
+/* ── Low Stock Badge ────────────────────────────────────── */
+.lp-badge-low {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.lp-badge-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(34, 197, 94, 0.15);
+  color: #22c55e;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+/* ── Buttons ────────────────────────────────────────────── */
+.lp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--lp-accent);
+  color: white;
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
+  text-decoration: none;
+}
+
+.lp-btn-primary:hover {
+  background: var(--lp-accent-light);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px var(--lp-accent-glow);
+}
+
+.lp-btn-primary:active {
+  transform: scale(0.98);
+}
+
+.lp-btn-primary:focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 2px;
+}
+
+.lp-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--lp-text);
+  font-weight: 600;
+  font-size: 15px;
+  padding: 12px 28px;
+  border-radius: 10px;
+  border: 1px solid var(--lp-border-accent);
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  text-decoration: none;
+}
+
+.lp-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-1px);
+}
+
+.lp-btn-secondary:active {
+  transform: scale(0.98);
+}
+
+.lp-btn-secondary:focus-visible {
+  outline: 2px solid var(--lp-accent);
+  outline-offset: 2px;
+}
+
+/* ── Footer ─────────────────────────────────────────────── */
+.lp-footer {
+  background: var(--lp-card);
+  border-top: 1px solid var(--lp-border);
+}
+
+/* ── Accent text ────────────────────────────────────────── */
+.lp-accent {
+  color: var(--lp-accent);
+}
+
+.lp-text-muted {
+  color: var(--lp-text-muted);
+}
+
+.lp-text-dim {
+  color: var(--lp-text-dim);
+}
+
+/* ── prefers-reduced-motion ─────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .lp-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .lp-float {
+    animation: none;
+  }
+
+  .lp-card:hover {
+    transform: none;
+  }
+
+  .lp-btn-primary:hover,
+  .lp-btn-secondary:hover {
+    transform: none;
+  }
+
+  .lp-card:hover .lp-icon-box {
+    transform: none;
+  }
+}

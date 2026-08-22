@@ -42,12 +42,31 @@ api.interceptors.response.use(
     console.error("Error Message:", error.message);
     console.error("=========================");
 
-    // If we receive a 401 and we aren't already on the login page
-    if (error.response?.status === 401 && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/auth')) {
-      // Clear supabase session if needed or just redirect
-      await supabase.auth.signOut();
+    const originalRequest = error.config;
+    
+    // If we receive a 401 and we haven't already retried
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
       
-      window.location.href = '/auth';
+      try {
+        // Attempt to get a fresh session. Supabase JS SDK handles token refresh automatically.
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        
+        if (session && !sessionError) {
+          // Update the authorization header with the new token
+          originalRequest.headers.Authorization = `Bearer ${session.access_token}`;
+          // Retry the original request
+          return api(originalRequest);
+        }
+      } catch (err) {
+        console.error("Session refresh failed", err);
+      }
+      
+      // If we get here, the session is truly dead or refresh failed
+      if (!window.location.pathname.includes('/login') && !window.location.pathname.includes('/auth')) {
+        await supabase.auth.signOut();
+        window.location.href = '/auth';
+      }
     }
     
     return Promise.reject(error);

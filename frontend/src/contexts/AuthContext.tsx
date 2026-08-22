@@ -4,15 +4,9 @@ import { User as SupabaseUser } from '@supabase/supabase-js';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { syncGoogleTokens } from '@/lib/api/google';
+import { getCurrentUserProfile, UserProfile } from '@/lib/api/users';
 
-export interface User {
-  id: string;
-  name: string;
-  email?: string;
-  role: 'owner' | 'staff';
-  avatar_url?: string;
-  is_active: boolean;
-}
+export interface User extends UserProfile {}
 
 interface AuthContextType {
   user: User | null;
@@ -30,22 +24,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
-  const mapSupabaseUser = (sbUser: SupabaseUser | null): User | null => {
-    if (!sbUser) return null;
-    return {
-      id: sbUser.id,
-      name: sbUser.user_metadata?.full_name || sbUser.email || 'User',
-      email: sbUser.email,
-      role: 'owner', // Default role for now
-      avatar_url: sbUser.user_metadata?.avatar_url,
-      is_active: true,
-    };
+  // We no longer just map the Supabase user, we fetch from backend
+  const fetchAndSetUser = async (sbUser: SupabaseUser | null) => {
+    if (!sbUser) {
+      setUser(null);
+      return;
+    }
+    
+    try {
+      const profile = await getCurrentUserProfile();
+      setUser(profile);
+    } catch (error) {
+      console.error("Failed to fetch user profile", error);
+      // Fallback if backend is unreachable or profile missing
+      setUser({
+        id: sbUser.id,
+        name: sbUser.user_metadata?.full_name || sbUser.email || 'User',
+        email: sbUser.email,
+        role: 'owner',
+        is_active: true,
+        profile_completed: false,
+        invoice_prefix: 'INV',
+        invoice_numbering_preference: 'sequential',
+        created_at: new Date().toISOString()
+      } as User);
+    }
   };
 
   const checkAuth = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(mapSupabaseUser(session?.user ?? null));
+      await fetchAndSetUser(session?.user ?? null);
       
       if (session?.provider_token) {
         try {
@@ -67,7 +76,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        setUser(mapSupabaseUser(session?.user ?? null));
+        await fetchAndSetUser(session?.user ?? null);
         
         if (session?.provider_token) {
           try {

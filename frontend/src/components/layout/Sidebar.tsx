@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavItem {
   label: string;
@@ -41,6 +42,20 @@ const bottomItems: NavItem[] = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const { user } = useAuth();
+  
+  const getInitials = () => {
+    if (user?.company_name) {
+      return user.company_name.substring(0, 1).toUpperCase();
+    }
+    return "S";
+  };
+  
+  const getFullLogoUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`;
+  };
 
   return (
     <aside
@@ -51,12 +66,12 @@ export function Sidebar() {
     >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-border min-h-[var(--navbar-height)]">
-        <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md">
+        <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md overflow-hidden">
           <Zap className="h-5 w-5 text-primary-foreground" />
         </div>
         {!collapsed && (
           <div className="flex flex-col overflow-hidden">
-            <span className="text-base font-bold text-foreground leading-none">
+            <span className="text-base font-bold text-foreground leading-none truncate">
               StockFlow
             </span>
             <span className="text-[10px] text-muted-foreground mt-0.5 leading-none">

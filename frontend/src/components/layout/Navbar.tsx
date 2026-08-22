@@ -31,22 +31,41 @@ export function Navbar() {
   const initials = user?.name 
     ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() 
     : "??";
+  
+  const getFullLogoUrl = (url?: string) => {
+    if (!url) return undefined;
+    if (url.startsWith('http')) return url;
+    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`;
+  };
 
   return (
     <header className="sticky top-0 z-30 flex h-[var(--navbar-height)] items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-6">
-      {/* Left: Search */}
-      <div className="flex items-center gap-4 flex-1 max-w-md">
-        <button className="flex items-center gap-2 h-9 w-full max-w-xs rounded-lg border border-border bg-card px-3 text-sm text-muted-foreground hover:border-primary/50 transition-colors">
-          <Search className="h-4 w-4 flex-shrink-0" />
-          <span className="truncate">Search products, invoices…</span>
-          <kbd className="ml-auto hidden sm:flex items-center gap-0.5 rounded border border-border bg-background px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-            ⌘K
-          </kbd>
-        </button>
+      {/* Left: Company Logo & Name */}
+      <div className="flex items-center gap-3 flex-1 overflow-hidden pr-4">
+        <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary/10 border border-border flex items-center justify-center overflow-hidden">
+          {user?.company_logo_url ? (
+            <img src={getFullLogoUrl(user.company_logo_url)} alt="Logo" className="h-full w-full object-contain" />
+          ) : (
+            <span className="text-xs sm:text-sm font-semibold text-primary">
+              {user?.company_name ? user.company_name.substring(0, 2).toUpperCase() : "MB"}
+            </span>
+          )}
+        </div>
+        <h1 
+          className="text-[20px] sm:text-[22px] font-medium text-foreground/90 tracking-tight truncate max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-lg" 
+          title={user?.company_name || "My Business"}
+        >
+          {user?.company_name || "My Business"}
+        </h1>
       </div>
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
+        {/* Search */}
+        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
+          <Search className="h-4.5 w-4.5" />
+          <span className="sr-only">Search</span>
+        </Button>
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative" id="navbar-notifications">
           <Bell className="h-4.5 w-4.5" />
@@ -81,12 +100,12 @@ export function Navbar() {
                 <AvatarImage src={user?.avatar_url || ""} alt={user?.name || "User"} />
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
-              <div className="hidden sm:flex flex-col items-start">
-                <span className="text-sm font-medium leading-none">
+              <div className="hidden sm:flex flex-col items-start text-left">
+                <span className="text-sm font-medium leading-none truncate max-w-[150px]">
                   {user?.name || "User"}
                 </span>
-                <span className="text-xs text-muted-foreground leading-none mt-0.5 capitalize">
-                  {user?.role || "Staff"}
+                <span className="text-xs text-muted-foreground leading-none mt-1 capitalize truncate max-w-[150px]">
+                  {user?.role || "Owner"}
                 </span>
               </div>
             </button>
@@ -94,9 +113,9 @@ export function Navbar() {
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">{user?.name || "User"}</p>
+                <p className="text-sm font-medium leading-none">{user?.company_name || "My Business"}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  {user?.email || "user@example.com"}
+                  {user?.name || "Owner"} • {user?.email || "user@example.com"}
                 </p>
               </div>
             </DropdownMenuLabel>

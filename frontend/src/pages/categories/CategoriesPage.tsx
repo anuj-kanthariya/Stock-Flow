@@ -285,7 +285,7 @@ export default function CategoriesPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will safely remove the category. Products within this category will not be deleted, but they may need to be reassigned.
+              Deleting this category will also permanently delete all products in this category. Continue?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

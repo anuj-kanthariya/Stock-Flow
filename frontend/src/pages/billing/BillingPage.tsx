@@ -58,7 +58,7 @@ export default function BillingPage() {
 
   useEffect(() => {
     if (!invoiceId) {
-      setInvoiceNo(generateInvoiceNumber());
+      setInvoiceNo("Pending Generation");
     }
   }, [invoiceId]);
 
