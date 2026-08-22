@@ -12,7 +12,7 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateCurrentUserProfile, uploadCompanyLogo } from "@/lib/api/users";
 import { toast } from "sonner";
-import { Building2, Bell, Shield, Palette, Globe, Upload, Loader2, ImagePlus } from "lucide-react";
+import { Building2, Bell, Shield, Palette, Globe,Loader2, ImagePlus } from "lucide-react";
 import { useRef } from "react";
 
 export default function SettingsPage() {

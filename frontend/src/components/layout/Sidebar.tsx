@@ -42,20 +42,7 @@ const bottomItems: NavItem[] = [
 
 export function Sidebar() {
   const [collapsed, setCollapsed] = useState(false);
-  const { user } = useAuth();
-  
-  const getInitials = () => {
-    if (user?.company_name) {
-      return user.company_name.substring(0, 1).toUpperCase();
-    }
-    return "S";
-  };
-  
-  const getFullLogoUrl = (url?: string) => {
-    if (!url) return undefined;
-    if (url.startsWith('http')) return url;
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`;
-  };
+  useAuth();
 
   return (
     <aside
