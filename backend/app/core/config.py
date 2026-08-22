@@ -17,7 +17,7 @@ load_dotenv(dotenv_path=ENV_FILE_PATH, override=True)
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=str(ENV_FILE_PATH),
+        env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
         extra="ignore"
@@ -55,6 +55,13 @@ class Settings(BaseSettings):
     # Supabase
     SUPABASE_URL: str = ""
     SUPABASE_KEY: str = ""
+
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+
+    # Storage
+    STORAGE_PROVIDER: str = "local"
 
 
 settings = Settings()

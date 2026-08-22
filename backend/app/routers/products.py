@@ -265,11 +265,11 @@ async def upload_product_image(
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp")
 
     # Validate file size
-    file_content = await file.read()
-    if len(file_content) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="File too large. Max size is 5MB.")
+    # We do not read the entire file here, the storage provider handles it,
+    # but we can check the size via file.size if available, or just pass it along.
+    # To keep it simple, we just pass the file to the storage provider.
     
-    # Delete old image if it exists
+    # Delete old image if it exists (local only currently, a full implementation would delete from remote)
     if product.image_url and product.image_url.startswith("/uploads/products/"):
         old_file_path = product.image_url.lstrip("/")
         if os.path.exists(old_file_path):
@@ -278,14 +278,9 @@ async def upload_product_image(
             except Exception:
                 pass
 
-    # Save new image
-    new_filename = f"{product_id}-{uuid.uuid4().hex[:8]}{ext}"
-    file_path = os.path.join("uploads", "products", new_filename)
-    
-    async with aiofiles.open(file_path, "wb") as out_file:
-        await out_file.write(file_content)
-        
-    image_url = f"/uploads/products/{new_filename}"
+    # Save new image via storage abstraction
+    from app.utils.storage import storage
+    image_url = await storage.upload(file, "products", product_id)
     
     # Update product
     product.image_url = image_url

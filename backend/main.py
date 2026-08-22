@@ -108,4 +108,14 @@ async def root():
 
 @app.get("/api/health", tags=["Health"])
 async def health_check():
-    return {"status": "ok"}
+    from app.database.database import engine
+    from sqlalchemy import text
+    if not engine:
+        return JSONResponse(status_code=503, content={"status": "unhealthy", "detail": "Database engine not initialized"})
+    try:
+        async with engine.connect() as conn:
+            await conn.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        logger.exception("Health check failed")
+        return JSONResponse(status_code=503, content={"status": "unhealthy", "detail": "Database connection failed"})

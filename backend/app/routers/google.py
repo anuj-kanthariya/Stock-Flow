@@ -12,8 +12,10 @@ from app.schemas.schemas import GoogleSyncTokensRequest, GoogleContactsListRespo
 
 router = APIRouter()
 
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+from app.core.config import settings
+
+GOOGLE_CLIENT_ID = settings.GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET = settings.GOOGLE_CLIENT_SECRET
 
 def get_current_utc():
     return datetime.now(timezone.utc)
