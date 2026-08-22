@@ -1,15 +1,4 @@
-import axios from 'axios';
-import { supabase } from '../supabase';
-
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
-
-const getHeaders = async () => {
-  const { data: { session } } = await supabase.auth.getSession();
-  return {
-    Authorization: `Bearer ${session?.access_token}`,
-    'Content-Type': 'application/json',
-  };
-};
+import api from '../axios';
 
 export interface UserProfile {
   id: string;
@@ -36,16 +25,12 @@ export interface UserProfile {
 }
 
 export const getCurrentUserProfile = async (): Promise<UserProfile> => {
-  const response = await axios.get(`${API_URL}/api/v1/users/me`, {
-    headers: await getHeaders(),
-  });
+  const response = await api.get('/users/me');
   return response.data;
 };
 
 export const updateCurrentUserProfile = async (data: Partial<UserProfile>): Promise<UserProfile> => {
-  const response = await axios.patch(`${API_URL}/api/v1/users/me`, data, {
-    headers: await getHeaders(),
-  });
+  const response = await api.patch('/users/me', data);
   return response.data;
 };
 
@@ -53,13 +38,8 @@ export const uploadCompanyLogo = async (file: File): Promise<UserProfile> => {
   const formData = new FormData();
   formData.append("file", file);
 
-  const { data: { session } } = await supabase.auth.getSession();
-  const response = await axios.post(`${API_URL}/api/v1/users/me/logo`, formData, {
-    headers: {
-      Authorization: `Bearer ${session?.access_token}`,
-      // Do not manually set Content-Type to multipart/form-data here;
-      // axios/browser will set it automatically with the correct boundary.
-    },
+  const response = await api.post('/users/me/logo', formData, {
+    // axios/browser will set Content-Type to multipart/form-data automatically with correct boundary
   });
   return response.data;
 };
