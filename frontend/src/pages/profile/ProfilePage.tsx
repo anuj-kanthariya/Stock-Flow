@@ -90,6 +90,7 @@ export default function ProfilePage() {
     try {
       await updateCurrentUserProfile({
         name: name,
+        email: email,
         phone: phone || undefined,
       });
 
@@ -313,8 +314,7 @@ export default function ProfilePage() {
                         id="profile-email"
                         type="email"
                         value={email}
-                        readOnly
-                        className="opacity-60 cursor-not-allowed"
+                        onChange={(e) => setEmail(e.target.value)}
                       />
                     </div>
                     <div className="space-y-1.5">

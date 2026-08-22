@@ -61,18 +61,10 @@ def create_refresh_token(data: Dict[str, Any]) -> str:
     return jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
 
 
-from supabase import create_async_client, AsyncClient
-
-_async_supabase: Optional[AsyncClient] = None
-
-async def get_async_supabase_client() -> AsyncClient:
-    global _async_supabase
-    if _async_supabase is None:
-        _async_supabase = await create_async_client(settings.SUPABASE_URL, settings.SUPABASE_KEY)
-    return _async_supabase
+import httpx
 
 async def get_supabase_user(token: str = Depends(oauth2_scheme)) -> dict:
-    """FastAPI dependency: validate token and extract user details from Supabase."""
+    """FastAPI dependency: validate token and extract user details directly from Supabase API."""
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -80,19 +72,30 @@ async def get_supabase_user(token: str = Depends(oauth2_scheme)) -> dict:
     )
     
     try:
-        # Validate token against Supabase Auth service asynchronously to prevent event loop blocking
-        client = await get_async_supabase_client()
-        user_response = await client.auth.get_user(token)
-        
-        if not user_response or not user_response.user:
-            raise credentials_exception
+        # Validate token against Supabase Auth service statelessly
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                f"{settings.SUPABASE_URL}/auth/v1/user",
+                headers={
+                    "Authorization": f"Bearer {token}",
+                    "apikey": settings.SUPABASE_KEY
+                }
+            )
             
-        return {
-            "id": user_response.user.id,
-            "email": user_response.user.email,
-            "full_name": user_response.user.user_metadata.get("full_name", ""),
-            "avatar_url": user_response.user.user_metadata.get("avatar_url", ""),
-        }
+            if response.status_code != 200:
+                print(f"Auth error from Supabase API: {response.text}")
+                raise credentials_exception
+                
+            user = response.json()
+            
+            return {
+                "id": user.get("id"),
+                "email": user.get("email"),
+                "full_name": user.get("user_metadata", {}).get("full_name", ""),
+                "avatar_url": user.get("user_metadata", {}).get("avatar_url", ""),
+            }
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"Auth error: {e}")
+        print(f"Auth network/parsing error: {e}")
         raise credentials_exception

@@ -33,6 +33,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     
     try {
       const profile = await getCurrentUserProfile();
+      
+      // Ensure email and name are populated from auth session if missing in database profile
+      if (!profile.email && sbUser.email) {
+        profile.email = sbUser.email;
+      }
+      if (!profile.name && sbUser.user_metadata?.full_name) {
+        profile.name = sbUser.user_metadata.full_name;
+      }
+
       setUser(profile);
     } catch (error) {
       console.error("Failed to fetch user profile", error);

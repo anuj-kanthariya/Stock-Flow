@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,19 @@ export function OnboardingFlow() {
     gst_number: user?.gst_number || "",
     business_address: user?.business_address || "",
   });
+
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        name: prev.name || user.name || "",
+        company_name: prev.company_name || user.company_name || "",
+        email: prev.email || user.email || "",
+        phone: prev.phone || user.phone || "",
+        gst_number: prev.gst_number || user.gst_number || "",
+        business_address: prev.business_address || user.business_address || "",
+      }));
+    }
+  }, [user]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -94,8 +107,6 @@ export function OnboardingFlow() {
                   value={formData.email}
                   onChange={handleChange}
                   required
-                  readOnly
-                  className="bg-muted"
                 />
               </div>
               <div className="space-y-2">
