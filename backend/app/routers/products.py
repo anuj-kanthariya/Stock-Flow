@@ -280,7 +280,7 @@ async def upload_product_image(
 
     # Save new image via storage abstraction
     from app.utils.storage import storage
-    image_url = await storage.upload(file, "products", product_id)
+    image_url = await storage.upload(file, "products", str(current_user.id), f"product-{product_id}")
     
     # Update product
     product.image_url = image_url

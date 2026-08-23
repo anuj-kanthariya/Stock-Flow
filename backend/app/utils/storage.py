@@ -4,30 +4,32 @@ import aiofiles
 from fastapi import UploadFile, HTTPException
 from app.core.config import settings
 
+import logging
+
+logger = logging.getLogger(__name__)
+
 class StorageProvider:
-    async def upload(self, file: UploadFile, directory: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
         raise NotImplementedError
 
 class LocalStorageProvider(StorageProvider):
-    async def upload(self, file: UploadFile, directory: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
         # Create directory if it doesn't exist (local dev only)
-        os.makedirs(f"uploads/{directory}", exist_ok=True)
+        os.makedirs(f"uploads/{directory}/{user_id}", exist_ok=True)
         
         ext = os.path.splitext(file.filename)[1].lower()
         new_filename = f"{filename_prefix}-{uuid.uuid4().hex[:8]}{ext}"
-        file_path = os.path.join("uploads", directory, new_filename)
+        file_path = os.path.join("uploads", directory, user_id, new_filename)
         
         file_content = await file.read()
         async with aiofiles.open(file_path, "wb") as out_file:
             await out_file.write(file_content)
             
-        return f"/uploads/{directory}/{new_filename}"
+        return f"/uploads/{directory}/{user_id}/{new_filename}"
 
 class VercelEphemeralStorageProvider(StorageProvider):
-    async def upload(self, file: UploadFile, directory: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
         # In Vercel, the filesystem is read-only or ephemeral.
-        # This is a stub provider that prevents crashes but doesn't store anything persistently.
-        # To fix this in production, you must implement S3, Supabase Storage, or Cloudinary.
         raise HTTPException(
             status_code=501, 
             detail="File uploads are disabled in this environment. Please configure an external storage provider."
@@ -42,10 +44,13 @@ class SupabaseStorageProvider(StorageProvider):
             raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables for SupabaseStorageProvider")
         self.supabase: Client = create_client(url, key)
 
-    async def upload(self, file: UploadFile, directory: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
         # directory corresponds to the bucket name
         ext = os.path.splitext(file.filename)[1].lower()
         new_filename = f"{filename_prefix}-{uuid.uuid4().hex[:8]}{ext}"
+        
+        # Scoped path: e.g. avatars/{user_id}/avatar-uuid.png
+        supabase_path = f"{user_id}/{new_filename}"
         
         content_type = file.content_type or "application/octet-stream"
         file_content = await file.read()
@@ -54,27 +59,31 @@ class SupabaseStorageProvider(StorageProvider):
         try:
             res = self.supabase.storage.from_(directory).upload(
                 file=file_content,
-                path=new_filename,
+                path=supabase_path,
                 file_options={"content-type": content_type, "x-upsert": "true"}
             )
         except Exception as e:
-            # Catch duplicate errors or other exceptions and attempt to raise a useful message
-            raise HTTPException(status_code=500, detail=f"Failed to upload to Supabase: {str(e)}")
+            logger.exception("Failed to upload file to Supabase Storage bucket '%s' at path '%s'", directory, supabase_path)
+            raise HTTPException(status_code=500, detail="Failed to upload file to storage provider. Please try again.")
             
         # Get public URL
-        public_url = self.supabase.storage.from_(directory).get_public_url(new_filename)
+        public_url = self.supabase.storage.from_(directory).get_public_url(supabase_path)
         return public_url
 
 # Factory to get the appropriate storage provider
 def get_storage_provider() -> StorageProvider:
-    if settings.STORAGE_PROVIDER == "local":
-        return LocalStorageProvider()
-    elif settings.STORAGE_PROVIDER == "vercel":
-        return VercelEphemeralStorageProvider()
-    elif settings.STORAGE_PROVIDER == "supabase":
+    provider = settings.STORAGE_PROVIDER.lower()
+    if provider == "supabase":
         return SupabaseStorageProvider()
+    elif provider == "local":
+        return LocalStorageProvider()
+    elif provider == "vercel":
+        return VercelEphemeralStorageProvider()
     else:
-        # Fallback to local
+        # If running in Vercel or production without a valid provider, do NOT silently fall back to local
+        if os.getenv("VERCEL") or not settings.DEBUG:
+            raise RuntimeError(f"Invalid or missing STORAGE_PROVIDER '{settings.STORAGE_PROVIDER}' in production environment. Must be 'supabase'.")
         return LocalStorageProvider()
 
 storage = get_storage_provider()
+
