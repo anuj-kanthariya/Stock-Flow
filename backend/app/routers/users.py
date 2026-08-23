@@ -16,6 +16,7 @@ from app.models.models import User
 import os
 from fastapi import File, UploadFile, HTTPException
 from app.utils.storage import storage
+from app.core.security import oauth2_scheme
 
 # ─── Users ────────────────────────────────────────────────────────────────────
 router = APIRouter()
@@ -55,13 +56,14 @@ async def upload_company_logo(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
 ):
     ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".svg"}
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp, svg")
     
-    image_url = await storage.upload(file, "logos", str(current_user.id), f"logo-{current_user.id}")
+    image_url = await storage.upload(file, "logos", str(current_user.id), f"logo-{current_user.id}", token=token)
     current_user.company_logo_url = image_url
     await db.commit()
     await db.refresh(current_user)
@@ -72,6 +74,7 @@ async def upload_user_avatar(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
+    token: str = Depends(oauth2_scheme)
 ):
     ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
     ext = os.path.splitext(file.filename)[1].lower()
@@ -79,7 +82,7 @@ async def upload_user_avatar(
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp")
     
     # Store in "avatars" bucket/directory with prefix "avatar-user_id"
-    image_url = await storage.upload(file, "avatars", str(current_user.id), f"avatar-{current_user.id}")
+    image_url = await storage.upload(file, "avatars", str(current_user.id), f"avatar-{current_user.id}", token=token)
     current_user.avatar_url = image_url
     await db.commit()
     await db.refresh(current_user)

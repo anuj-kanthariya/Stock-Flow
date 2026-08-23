@@ -9,11 +9,11 @@ import logging
 logger = logging.getLogger(__name__)
 
 class StorageProvider:
-    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str, token: str = None) -> str:
         raise NotImplementedError
 
 class LocalStorageProvider(StorageProvider):
-    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str, token: str = None) -> str:
         # Create directory if it doesn't exist (local dev only)
         os.makedirs(f"uploads/{directory}/{user_id}", exist_ok=True)
         
@@ -28,7 +28,7 @@ class LocalStorageProvider(StorageProvider):
         return f"/uploads/{directory}/{user_id}/{new_filename}"
 
 class VercelEphemeralStorageProvider(StorageProvider):
-    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str, token: str = None) -> str:
         # In Vercel, the filesystem is read-only or ephemeral.
         raise HTTPException(
             status_code=501, 
@@ -44,7 +44,7 @@ class SupabaseStorageProvider(StorageProvider):
             raise ValueError("SUPABASE_URL and SUPABASE_KEY must be set in environment variables for SupabaseStorageProvider")
         self.supabase: Client = create_client(url, key)
 
-    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str) -> str:
+    async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str, token: str = None) -> str:
         # directory corresponds to the bucket name
         ext = os.path.splitext(file.filename)[1].lower()
         new_filename = f"{filename_prefix}-{uuid.uuid4().hex[:8]}{ext}"
@@ -55,19 +55,44 @@ class SupabaseStorageProvider(StorageProvider):
         content_type = file.content_type or "application/octet-stream"
         file_content = await file.read()
         
+        # Use an authenticated client if token is provided
+        client = self.supabase
+        if token:
+            from supabase import create_client, ClientOptions
+            client = create_client(
+                settings.SUPABASE_URL,
+                settings.SUPABASE_KEY,
+                options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+            )
+        
         # Upload to Supabase Storage
         try:
-            res = self.supabase.storage.from_(directory).upload(
+            res = client.storage.from_(directory).upload(
                 file=file_content,
                 path=supabase_path,
                 file_options={"content-type": content_type, "x-upsert": "true"}
             )
         except Exception as e:
             logger.exception("Failed to upload file to Supabase Storage bucket '%s' at path '%s'", directory, supabase_path)
-            raise HTTPException(status_code=500, detail="Failed to upload file to storage provider. Please try again.")
+            
+            # Extract error message if it's a StorageApiError or similar JSON response
+            detail = "Failed to upload file to storage provider. Please try again."
+            if hasattr(e, 'to_dict'):
+                try:
+                    err_dict = e.to_dict()
+                    if 'message' in err_dict:
+                        detail = f"Upload failed: {err_dict['message']}"
+                except:
+                    pass
+            elif hasattr(e, 'message'):
+                detail = f"Upload failed: {e.message}"
+            else:
+                detail = f"Upload failed: {str(e)}"
+                
+            raise HTTPException(status_code=500, detail=detail)
             
         # Get public URL
-        public_url = self.supabase.storage.from_(directory).get_public_url(supabase_path)
+        public_url = client.storage.from_(directory).get_public_url(supabase_path)
         return public_url
 
 # Factory to get the appropriate storage provider
