@@ -67,6 +67,24 @@ async def upload_company_logo(
     await db.refresh(current_user)
     return current_user
 
+@router.post("/me/avatar", response_model=UserResponse)
+async def upload_user_avatar(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_active_user),
+    db: AsyncSession = Depends(get_db),
+):
+    ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
+    ext = os.path.splitext(file.filename)[1].lower()
+    if ext not in ALLOWED_EXTENSIONS:
+        raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp")
+    
+    # Store in "avatars" bucket/directory with prefix "avatar-user_id"
+    image_url = await storage.upload(file, "avatars", f"avatar-{current_user.id}")
+    current_user.avatar_url = image_url
+    await db.commit()
+    await db.refresh(current_user)
+    return current_user
+
 @router.patch("/me/password")
 async def change_password(current_password: str, new_password: str, current_user: User = Depends(get_current_active_user)):
     raise NotImplementedError

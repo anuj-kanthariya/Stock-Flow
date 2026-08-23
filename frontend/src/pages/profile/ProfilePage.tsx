@@ -16,7 +16,9 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { InvoiceStatusBadge } from "@/components/shared/InvoiceStatusBadge";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import { getCurrentUserProfile, updateCurrentUserProfile } from "@/lib/api/users";
+import { getCurrentUserProfile, updateCurrentUserProfile, uploadUserAvatar } from "@/lib/api/users";
+import { getNormalizedImageUrl } from "@/lib/image-utils";
+import { ImageCropModal } from "@/components/shared/ImageCropModal";
 
 export default function ProfilePage() {
   const { user, checkAuth } = useAuth();
@@ -33,6 +35,10 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState("");
   const [role, setRole] = useState("User");
   const [avatarUrl, setAvatarUrl] = useState("");
+
+  // Crop Modal State
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
 
   const activityStats = [
     { label: "Invoices Created", value: "128", icon: FileText, color: "text-primary" },
@@ -68,7 +74,8 @@ export default function ProfilePage() {
       const resolvedRole = profile.role ? profile.role.charAt(0).toUpperCase() + profile.role.slice(1) : "User";
       setRole(resolvedRole);
 
-      const resolvedAvatar = profile.avatar_url || authMetadata?.avatar_url || authMetadata?.picture || "";
+      const rawAvatar = profile.avatar_url || authMetadata?.avatar_url || authMetadata?.picture || "";
+      const resolvedAvatar = getNormalizedImageUrl(rawAvatar) || "";
       console.log("Resolved Avatar URL (DB > Auth Metadata):", resolvedAvatar);
       setAvatarUrl(resolvedAvatar);
 
@@ -105,105 +112,52 @@ export default function ProfilePage() {
     }
   };
 
-  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    console.log("----- AVATAR UPLOAD TRACE -----");
-    console.log("AUTH USER:", user);
-    
-    if (!file || !user) {
-      console.log("No file or no user found. Aborting.");
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File size should be less than 5MB");
       return;
     }
 
-    // Reset input
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
-
-    // Validation
-    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      toast.error("Invalid file type. Please upload a JPEG, PNG, or WEBP image.");
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
+    if (!validTypes.includes(file.type)) {
+      toast.error("Only JPG, PNG, and WebP formats are allowed");
       return;
     }
 
-    const maxSize = 5 * 1024 * 1024; // 5 MB
-    if (file.size > maxSize) {
-      toast.error("File is too large. Please upload an image smaller than 5 MB.");
-      return;
-    }
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      setCropImageSrc(reader.result?.toString() || null);
+      setIsCropModalOpen(true);
+    });
+    reader.readAsDataURL(file);
+    event.target.value = ''; // Reset input
+  };
 
+  const handleCropComplete = async (croppedFile: File) => {
     setIsUploading(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const filePath = `${user.id}/profile.${fileExt}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("avatars")
-        .upload(filePath, file, { 
-          upsert: true,
-          contentType: file.type,
-        });
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("avatars")
-        .getPublicUrl(filePath);
-
-      const cacheBustedUrl = `${publicUrl}?t=${Date.now()}`;
-      console.log("GENERATED AVATAR URL:", cacheBustedUrl);
-
-      // 1. Update the database profile
-      console.log("Updating profile table for user:", user.id);
-      const { data: updateData, error: updateError } = await supabase
-        .from("profiles")
-        .update({ avatar_url: cacheBustedUrl })
-        .eq("id", user.id)
-        .select();
-
-      console.log("PROFILE UPDATE RESULT:", updateData);
-      console.log("PROFILE UPDATE ERROR:", updateError);
-
-      if (updateError) throw updateError;
-      if (!updateData || updateData.length === 0) {
-        throw new Error("Database update failed silently (0 rows affected). You are missing an UPDATE policy for the 'profiles' table in Supabase RLS.");
-      }
-
-      // 2. Update the Auth metadata so the Navbar (AuthContext) updates immediately
-      const { error: authError } = await supabase.auth.updateUser({
-        data: { avatar_url: cacheBustedUrl }
-      });
+      // 1. Upload the cropped image
+      const updatedProfile = await uploadUserAvatar(croppedFile);
       
-      if (authError) {
-        console.error("Auth metadata update failed:", authError);
-        throw new Error("Failed to update user auth metadata.");
-      }
-
-      // 3. Update local state explicitly AFTER database and auth updates succeed
-      console.log("Setting local React state avatarUrl to:", cacheBustedUrl);
-      setAvatarUrl(cacheBustedUrl);
+      // 2. Globally sync the auth session and user context
+      await checkAuth();
       
-      // Fetch profile again to verify database persistence
-      const { data: refreshedProfile } = await supabase
-        .from("profiles")
-        .select("avatar_url")
-        .eq("id", user.id)
-        .single();
-      console.log("PROFILE AFTER UPDATE (refetched):", refreshedProfile);
-
+      // 3. Update local UI state
+      if (updatedProfile.avatar_url) {
+        setAvatarUrl(getNormalizedImageUrl(updatedProfile.avatar_url) || "");
+      }
+      
       toast.success("Profile picture updated successfully");
     } catch (error: any) {
-      console.error("Error uploading avatar:", error);
-      
-      const errorMessage = error.message?.toLowerCase() || "";
-      if (errorMessage.includes("bucket not found")) {
-        toast.error("Avatar storage is not configured. Please create the 'avatars' storage bucket in Supabase.");
-      } else {
-        toast.error(error.message || "Failed to upload avatar.");
-      }
+      console.error(error);
+      const msg = error.response?.data?.detail || "Failed to upload profile picture";
+      toast.error(msg);
     } finally {
       setIsUploading(false);
+      setIsCropModalOpen(false);
     }
   };
 
@@ -227,8 +181,6 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-5">
-      
-
       <PageHeader
         title="My Profile"
         description="Manage your personal information and activity"
@@ -245,12 +197,11 @@ export default function ProfilePage() {
                 <AvatarFallback className="text-2xl font-bold">{getInitials(name)}</AvatarFallback>
               </Avatar>
               <input
-                type="file"
-                accept="image/*"
-                className="hidden"
+                type="file" 
+                className="hidden" 
+                accept="image/jpeg,image/png,image/webp" 
                 ref={fileInputRef}
-                onChange={handleAvatarUpload}
-                disabled={isUploading}
+                onChange={handleFileSelect} 
               />
               <button 
                 onClick={() => fileInputRef.current?.click()}
@@ -380,6 +331,16 @@ export default function ProfilePage() {
           </Tabs>
         </div>
       </div>
+      
+      {cropImageSrc && (
+        <ImageCropModal
+          isOpen={isCropModalOpen}
+          imageSrc={cropImageSrc}
+          onClose={() => setIsCropModalOpen(false)}
+          onCropComplete={handleCropComplete}
+          aspect={1}
+        />
+      )}
     </div>
   );
 }

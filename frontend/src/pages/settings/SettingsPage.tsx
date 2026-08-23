@@ -11,6 +11,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { updateCurrentUserProfile, uploadCompanyLogo } from "@/lib/api/users";
+import { getNormalizedImageUrl } from "@/lib/image-utils";
+import { ImageCropModal } from "@/components/shared/ImageCropModal";
 import { toast } from "sonner";
 import { Building2, Bell, Shield, Palette, Globe,Loader2, ImagePlus } from "lucide-react";
 import { useRef } from "react";
@@ -19,6 +21,10 @@ export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const { user, checkAuth } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Crop Modal State
+  const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [isCropModalOpen, setIsCropModalOpen] = useState(false);
   
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   const [emailNotif, setEmailNotif] = useState(true);
@@ -72,35 +78,43 @@ export default function SettingsPage() {
     }
   };
 
-  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
     if (!file) return;
 
-    // Validate size (5 MB)
     if (file.size > 5 * 1024 * 1024) {
-      toast.error("Logo must be smaller than 5 MB.");
+      toast.error("File size should be less than 5MB");
       return;
     }
 
-    // Validate type
-    const validTypes = ["image/jpeg", "image/png", "image/webp", "image/svg+xml"];
+    const validTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!validTypes.includes(file.type)) {
-      toast.error("Please upload a PNG, JPG, WEBP, or SVG image.");
+      toast.error("Only JPG, PNG, and WebP formats are allowed");
       return;
     }
 
+    const reader = new FileReader();
+    reader.addEventListener("load", () => {
+      setCropImageSrc(reader.result?.toString() || null);
+      setIsCropModalOpen(true);
+    });
+    reader.readAsDataURL(file);
+    event.target.value = ''; // Reset input
+  };
+
+  const handleCropComplete = async (croppedFile: File) => {
     setIsUploadingLogo(true);
     try {
-      await uploadCompanyLogo(file);
-      await checkAuth(); // Refresh user state to get new logo URL
-      toast.success("Company logo updated successfully.");
-    } catch (error) {
-      console.error("Upload error:", error);
-      toast.error("Failed to upload company logo. Please try again.");
+      await uploadCompanyLogo(croppedFile);
+      await checkAuth(); // Refresh global state to update navbar instantly
+      toast.success("Company logo updated successfully");
+    } catch (error: any) {
+      console.error(error);
+      const msg = error.response?.data?.detail || "Failed to upload company logo";
+      toast.error(msg);
     } finally {
       setIsUploadingLogo(false);
-      // Reset input so the same file can be uploaded again if needed
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setIsCropModalOpen(false);
     }
   };
 
@@ -110,12 +124,7 @@ export default function SettingsPage() {
     return name.substring(0, 2).toUpperCase();
   };
 
-  // Helper for full logo URL
-  const getFullLogoUrl = (url?: string) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`;
-  };
+  const resolvedLogo = getNormalizedImageUrl(user?.company_logo_url);
 
   return (
     <div className="space-y-5">
@@ -191,9 +200,9 @@ export default function SettingsPage() {
                 <Label htmlFor="company-logo">Company Logo</Label>
                 <div className="flex items-center gap-3">
                   <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center overflow-hidden border border-border">
-                    {user?.company_logo_url ? (
+                    {resolvedLogo ? (
                       <img 
-                        src={getFullLogoUrl(user.company_logo_url) || ""} 
+                        src={resolvedLogo} 
                         alt="Company Logo" 
                         className="h-full w-full object-contain"
                       />
@@ -206,8 +215,8 @@ export default function SettingsPage() {
                   <input
                     type="file"
                     ref={fileInputRef}
-                    onChange={handleLogoUpload}
-                    accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                    onChange={handleFileSelect}
+                    accept="image/png,image/jpeg,image/webp"
                     hidden
                   />
                   <Button 
@@ -416,6 +425,18 @@ export default function SettingsPage() {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {cropImageSrc && (
+        <ImageCropModal
+          isOpen={isCropModalOpen}
+          imageSrc={cropImageSrc}
+          onClose={() => setIsCropModalOpen(false)}
+          onCropComplete={handleCropComplete}
+          aspect={1}
+          title="Adjust Company Logo"
+          confirmText="Crop & Upload"
+        />
+      )}
     </div>
   );
-}
+}

@@ -12,6 +12,7 @@ import {
 import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
+import { getNormalizedImageUrl } from "@/lib/image-utils";
 
 export function Navbar() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -31,20 +32,17 @@ export function Navbar() {
   const initials = user?.name 
     ? user.name.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() 
     : "??";
-  
-  const getFullLogoUrl = (url?: string) => {
-    if (!url) return undefined;
-    if (url.startsWith('http')) return url;
-    return `${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${url}`;
-  };
+
+  const resolvedAvatar = getNormalizedImageUrl(user?.avatar_url);
+  const resolvedLogo = getNormalizedImageUrl(user?.company_logo_url);
 
   return (
     <header className="sticky top-0 z-30 flex h-[var(--navbar-height)] items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-6">
       {/* Left: Company Logo & Name */}
       <div className="flex items-center gap-3 flex-1 overflow-hidden pr-4">
         <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary/10 border border-border flex items-center justify-center overflow-hidden">
-          {user?.company_logo_url ? (
-            <img src={getFullLogoUrl(user.company_logo_url)} alt="Logo" className="h-full w-full object-contain" />
+          {resolvedLogo ? (
+            <img src={resolvedLogo} alt="Logo" className="h-full w-full object-contain" />
           ) : (
             <span className="text-xs sm:text-sm font-semibold text-primary">
               {user?.company_name ? user.company_name.substring(0, 2).toUpperCase() : "MB"}
@@ -97,7 +95,7 @@ export function Navbar() {
               className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-accent/10 transition-colors"
             >
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatar_url || ""} alt={user?.name || "User"} />
+                <AvatarImage src={resolvedAvatar} alt={user?.name || "User"} />
                 <AvatarFallback>{initials}</AvatarFallback>
               </Avatar>
               <div className="hidden sm:flex flex-col items-start text-left">

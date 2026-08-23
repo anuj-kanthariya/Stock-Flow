@@ -39,7 +39,21 @@ export const uploadCompanyLogo = async (file: File): Promise<UserProfile> => {
   formData.append("file", file);
 
   const response = await api.post('/users/me/logo', formData, {
-    // axios/browser will set Content-Type to multipart/form-data automatically with correct boundary
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+export const uploadUserAvatar = async (file: File): Promise<UserProfile> => {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await api.post('/users/me/avatar', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
   });
   return response.data;
 };
