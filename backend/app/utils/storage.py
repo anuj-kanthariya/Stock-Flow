@@ -11,6 +11,9 @@ logger = logging.getLogger(__name__)
 class StorageProvider:
     async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str, token: str = None) -> str:
         raise NotImplementedError
+        
+    async def delete(self, path_or_url: str, directory: str, token: str = None):
+        pass
 
 class LocalStorageProvider(StorageProvider):
     async def upload(self, file: UploadFile, directory: str, user_id: str, filename_prefix: str, token: str = None) -> str:
@@ -66,8 +69,10 @@ class SupabaseStorageProvider(StorageProvider):
             )
         
         # Upload to Supabase Storage
+        from fastapi.concurrency import run_in_threadpool
         try:
-            res = client.storage.from_(directory).upload(
+            res = await run_in_threadpool(
+                client.storage.from_(directory).upload,
                 file=file_content,
                 path=supabase_path,
                 file_options={"content-type": content_type, "x-upsert": "true"}
@@ -94,6 +99,29 @@ class SupabaseStorageProvider(StorageProvider):
         # Get public URL
         public_url = client.storage.from_(directory).get_public_url(supabase_path)
         return public_url
+
+    async def delete(self, path_or_url: str, directory: str, token: str = None):
+        client = self.supabase
+        if token:
+            from supabase import create_client, ClientOptions
+            client = create_client(
+                self.supabase.supabase_url,
+                self.supabase.supabase_key,
+                options=ClientOptions(headers={"Authorization": f"Bearer {token}"})
+            )
+        
+        try:
+            path = path_or_url
+            if "public/" + directory + "/" in path_or_url:
+                path = path_or_url.split("public/" + directory + "/")[1].split("?")[0]
+                
+            from fastapi.concurrency import run_in_threadpool
+            await run_in_threadpool(
+                client.storage.from_(directory).remove,
+                [path]
+            )
+        except Exception as e:
+            logger.error("SUPABASE_STORAGE_DELETE_EXCEPTION\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
 
 # Factory to get the appropriate storage provider
 def get_storage_provider() -> StorageProvider:

@@ -73,10 +73,18 @@ async def upload_company_logo(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp, svg")
     
+    try:
+        # Commit any open transaction before a slow external API call 
+        # to prevent idle-in-transaction timeouts in Vercel/PgBouncer
+        await db.commit()
+    except Exception:
+        pass
+        
     import time
     try:
         logger.info("LOGO_STORAGE_UPLOAD_START\nbucket=logos\npath_prefix=logo-%s", current_user.id)
         image_url = await storage.upload(file, "logos", str(current_user.id), f"logo-{current_user.id}", token=token)
+
         logger.info("LOGO_STORAGE_UPLOAD_SUCCESS")
     except Exception as e:
         logger.error("LOGO_STORAGE_UPLOAD_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
@@ -94,6 +102,13 @@ async def upload_company_logo(
     except Exception as e:
         logger.error("LOGO_DB_UPDATE_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
         await db.rollback()
+        
+        # Cleanup orphaned storage object
+        try:
+            await storage.delete(image_url, "logos", token=token)
+        except Exception as cleanup_err:
+            logger.error("LOGO_CLEANUP_FAILED\nexception_message=%s", str(cleanup_err))
+            
         raise HTTPException(status_code=500, detail="Database update failed")
         
     return current_user
@@ -122,6 +137,13 @@ async def upload_user_avatar(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp")
     
+    try:
+        # Commit any open transaction before a slow external API call 
+        # to prevent idle-in-transaction timeouts in Vercel/PgBouncer
+        await db.commit()
+    except Exception:
+        pass
+        
     import time
     try:
         logger.info("AVATAR_STORAGE_UPLOAD_START\nbucket=avatars\npath_prefix=avatar-%s", current_user.id)
@@ -143,6 +165,13 @@ async def upload_user_avatar(
     except Exception as e:
         logger.error("AVATAR_DB_UPDATE_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
         await db.rollback()
+        
+        # Cleanup orphaned storage object
+        try:
+            await storage.delete(image_url, "avatars", token=token)
+        except Exception as cleanup_err:
+            logger.error("AVATAR_CLEANUP_FAILED\nexception_message=%s", str(cleanup_err))
+            
         raise HTTPException(status_code=500, detail="Database update failed")
         
     return current_user
