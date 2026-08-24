@@ -8,7 +8,7 @@
  * - Null or empty strings return `undefined`.
  */
 export const getNormalizedImageUrl = (url?: string | null): string | undefined => {
-  if (!url) return undefined;
+  if (!url || typeof url !== 'string') return undefined;
 
   // Complete HTTPS or HTTP URL (Supabase, Google, etc.)
   if (url.startsWith('http://') || url.startsWith('https://')) {

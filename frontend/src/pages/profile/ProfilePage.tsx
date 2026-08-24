@@ -146,8 +146,11 @@ export default function ProfilePage() {
       await checkAuth();
       
       // 3. Update local UI state
-      if (updatedProfile.avatar_url) {
-        setAvatarUrl(getNormalizedImageUrl(updatedProfile.avatar_url) || "");
+      if (updatedProfile && typeof updatedProfile === 'object') {
+        const newAvatarUrl = updatedProfile.avatar_url;
+        if (typeof newAvatarUrl === 'string' && newAvatarUrl.trim() !== '') {
+          setAvatarUrl(getNormalizedImageUrl(newAvatarUrl) || "");
+        }
       }
       
       toast.success("Profile picture updated successfully");

@@ -63,8 +63,12 @@ async def upload_company_logo(
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp, svg")
     
+    import time
     image_url = await storage.upload(file, "logos", str(current_user.id), f"logo-{current_user.id}", token=token)
-    current_user.company_logo_url = image_url
+    # Add a cache-busting timestamp parameter
+    cache_buster = f"t={int(time.time())}"
+    image_url_with_cache = f"{image_url}?{cache_buster}" if "?" not in image_url else f"{image_url}&{cache_buster}"
+    current_user.company_logo_url = image_url_with_cache
     await db.commit()
     await db.refresh(current_user)
     return current_user
@@ -82,8 +86,12 @@ async def upload_user_avatar(
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp")
     
     # Store in "avatars" bucket/directory with prefix "avatar-user_id"
+    import time
     image_url = await storage.upload(file, "avatars", str(current_user.id), f"avatar-{current_user.id}", token=token)
-    current_user.avatar_url = image_url
+    # Add a cache-busting timestamp parameter
+    cache_buster = f"t={int(time.time())}"
+    image_url_with_cache = f"{image_url}?{cache_buster}" if "?" not in image_url else f"{image_url}&{cache_buster}"
+    current_user.avatar_url = image_url_with_cache
     await db.commit()
     await db.refresh(current_user)
     return current_user
