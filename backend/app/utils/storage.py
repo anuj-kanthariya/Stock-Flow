@@ -73,7 +73,7 @@ class SupabaseStorageProvider(StorageProvider):
                 file_options={"content-type": content_type, "x-upsert": "true"}
             )
         except Exception as e:
-            logger.exception(f"Failed to upload file to Supabase Storage bucket '{directory}' at path '{supabase_path}'. Exception: {e}")
+            logger.error("SUPABASE_STORAGE_UPLOAD_EXCEPTION\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
             
             # Extract error message if it's a StorageApiError or similar JSON response
             detail = "Failed to upload file to storage provider. Please try again."

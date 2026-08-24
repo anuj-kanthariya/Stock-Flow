@@ -58,19 +58,44 @@ async def upload_company_logo(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    file_bytes = await file.read()
+    file_size = len(file_bytes)
+    await file.seek(0)
+    
+    logger.info("LOGO_UPLOAD_START\nuser_id=%s\nfilename=%s\ncontent_type=%s\nfile_size=%s", 
+                current_user.id, file.filename, file.content_type, file_size)
+
     ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp", ".svg"}
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp, svg")
     
     import time
-    image_url = await storage.upload(file, "logos", str(current_user.id), f"logo-{current_user.id}", token=token)
-    # Add a cache-busting timestamp parameter
+    try:
+        logger.info("LOGO_STORAGE_UPLOAD_START\nbucket=logos\npath_prefix=logo-%s", current_user.id)
+        image_url = await storage.upload(file, "logos", str(current_user.id), f"logo-{current_user.id}", token=token)
+        logger.info("LOGO_STORAGE_UPLOAD_SUCCESS")
+    except Exception as e:
+        logger.error("LOGO_STORAGE_UPLOAD_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
+        raise
+        
     cache_buster = f"t={int(time.time())}"
     image_url_with_cache = f"{image_url}?{cache_buster}" if "?" not in image_url else f"{image_url}&{cache_buster}"
-    current_user.company_logo_url = image_url_with_cache
-    await db.commit()
-    await db.refresh(current_user)
+    
+    try:
+        logger.info("LOGO_DB_UPDATE_START")
+        current_user.company_logo_url = image_url_with_cache
+        await db.commit()
+        await db.refresh(current_user)
+        logger.info("LOGO_DB_UPDATE_SUCCESS")
+    except Exception as e:
+        logger.error("LOGO_DB_UPDATE_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Database update failed")
+        
     return current_user
 
 @router.post("/me/avatar", response_model=UserResponse)
@@ -80,20 +105,46 @@ async def upload_user_avatar(
     db: AsyncSession = Depends(get_db),
     token: str = Depends(oauth2_scheme)
 ):
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    file_bytes = await file.read()
+    file_size = len(file_bytes)
+    # Seek back to 0 so storage can read it again if it expects to, but since we pass file_bytes it might be fine, wait, storage.py does `file.read()`, so we shouldn't read it here, OR we should seek back.
+    # Ah! `file.read()` reads the bytes. If we do it here, storage.py will read 0 bytes! That's a huge bug.
+    await file.seek(0)
+    
+    logger.info("AVATAR_UPLOAD_START\nuser_id=%s\nfilename=%s\ncontent_type=%s\nfile_size=%s", 
+                current_user.id, file.filename, file.content_type, file_size)
+
     ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
     ext = os.path.splitext(file.filename)[1].lower()
     if ext not in ALLOWED_EXTENSIONS:
         raise HTTPException(status_code=400, detail="Invalid image type. Allowed: jpg, jpeg, png, webp")
     
-    # Store in "avatars" bucket/directory with prefix "avatar-user_id"
     import time
-    image_url = await storage.upload(file, "avatars", str(current_user.id), f"avatar-{current_user.id}", token=token)
-    # Add a cache-busting timestamp parameter
+    try:
+        logger.info("AVATAR_STORAGE_UPLOAD_START\nbucket=avatars\npath_prefix=avatar-%s", current_user.id)
+        image_url = await storage.upload(file, "avatars", str(current_user.id), f"avatar-{current_user.id}", token=token)
+        logger.info("AVATAR_STORAGE_UPLOAD_SUCCESS")
+    except Exception as e:
+        logger.error("AVATAR_STORAGE_UPLOAD_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
+        raise
+        
     cache_buster = f"t={int(time.time())}"
     image_url_with_cache = f"{image_url}?{cache_buster}" if "?" not in image_url else f"{image_url}&{cache_buster}"
-    current_user.avatar_url = image_url_with_cache
-    await db.commit()
-    await db.refresh(current_user)
+    
+    try:
+        logger.info("AVATAR_DB_UPDATE_START")
+        current_user.avatar_url = image_url_with_cache
+        await db.commit()
+        await db.refresh(current_user)
+        logger.info("AVATAR_DB_UPDATE_SUCCESS")
+    except Exception as e:
+        logger.error("AVATAR_DB_UPDATE_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
+        await db.rollback()
+        raise HTTPException(status_code=500, detail="Database update failed")
+        
     return current_user
 
 @router.patch("/me/password")
