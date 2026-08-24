@@ -125,17 +125,16 @@ class SupabaseStorageProvider(StorageProvider):
 
 # Factory to get the appropriate storage provider
 def get_storage_provider() -> StorageProvider:
+    # Always use Supabase in Vercel production to avoid read-only filesystem errors
+    if os.getenv("VERCEL"):
+        return SupabaseStorageProvider()
+        
     provider = settings.STORAGE_PROVIDER.lower()
     if provider == "supabase":
         return SupabaseStorageProvider()
-    elif provider == "local":
-        return LocalStorageProvider()
     elif provider == "vercel":
         return VercelEphemeralStorageProvider()
     else:
-        # If running in Vercel or production without a valid provider, do NOT silently fall back to local
-        if os.getenv("VERCEL") or not settings.DEBUG:
-            raise RuntimeError(f"Invalid or missing STORAGE_PROVIDER '{settings.STORAGE_PROVIDER}' in production environment. Must be 'supabase'.")
         return LocalStorageProvider()
 
 storage = get_storage_provider()
