@@ -129,8 +129,8 @@ async def upload_user_avatar(
     # Ah! `file.read()` reads the bytes. If we do it here, storage.py will read 0 bytes! That's a huge bug.
     await file.seek(0)
     
-    logger.info("AVATAR_UPLOAD_START\nuser_id=%s\nfilename=%s\ncontent_type=%s\nfile_size=%s", 
-                current_user.id, file.filename, file.content_type, file_size)
+    logger.info("AVATAR_UPLOAD_START\nuser_authenticated=true\nuser_id=%s\nfilename=%s\ncontent_type=%s", 
+                current_user.id, file.filename, file.content_type)
 
     ALLOWED_EXTENSIONS = {".jpg", ".jpeg", ".png", ".webp"}
     ext = os.path.splitext(file.filename)[1].lower()
@@ -157,13 +157,18 @@ async def upload_user_avatar(
     image_url_with_cache = f"{image_url}?{cache_buster}" if "?" not in image_url else f"{image_url}&{cache_buster}"
     
     try:
-        logger.info("AVATAR_DB_UPDATE_START")
+        logger.info("AVATAR_PROFILE_UPDATE_START")
         current_user.avatar_url = image_url_with_cache
+        db.add(current_user)
+        logger.info("AVATAR_PROFILE_UPDATE_SUCCESS")
+        
         await db.commit()
+        logger.info("AVATAR_DB_COMMIT_SUCCESS")
+        
         await db.refresh(current_user)
-        logger.info("AVATAR_DB_UPDATE_SUCCESS")
+        logger.info("AVATAR_UPLOAD_COMPLETE")
     except Exception as e:
-        logger.error("AVATAR_DB_UPDATE_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
+        logger.error("AVATAR_DB_COMMIT_FAILED\nexception_type=%s\nexception_message=%s", type(e).__name__, str(e), exc_info=True)
         await db.rollback()
         
         # Cleanup orphaned storage object
