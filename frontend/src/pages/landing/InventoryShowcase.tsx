@@ -59,7 +59,7 @@ export default function InventoryShowcase() {
                   className="lp-inventory-row text-[var(--lp-text-muted)]"
                 >
                   <div>
-                    <span className="text-white font-medium text-[12px] block truncate">
+                    <span className="text-[var(--lp-text)] font-medium text-[12px] block truncate">
                       {p.name}
                     </span>
                     <span className="text-[10px] lp-text-dim">{p.sku}</span>

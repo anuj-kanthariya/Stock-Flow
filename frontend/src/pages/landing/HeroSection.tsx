@@ -36,7 +36,7 @@ export default function HeroSection({ isAuthenticated }: HeroSectionProps) {
   ];
 
   return (
-    <section className="lp-section pt-32 pb-16 md:pt-40 md:pb-20">
+    <section className="lp-section pt-24 pb-16 md:pt-40 md:pb-20">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
         {/* Left — Text */}
         <div className="lp-reveal revealed">
@@ -49,13 +49,13 @@ export default function HeroSection({ isAuthenticated }: HeroSectionProps) {
           </div>
 
           {/* Heading */}
-          <h1 className="text-4xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.1] tracking-tight mb-6">
+          <h1 className="text-3xl sm:text-5xl lg:text-[3.5rem] font-extrabold leading-[1.15] tracking-tight mb-6">
             Manage Your{" "}
             <span className="lp-accent">Inventory</span>.
-            <br />
+            <br className="hidden sm:block" />
             Simplify Your{" "}
             <span className="lp-accent">Billing</span>.
-            <br />
+            <br className="hidden sm:block" />
             Grow Your{" "}
             <span className="lp-accent">Business</span>.
           </h1>
@@ -67,18 +67,18 @@ export default function HeroSection({ isAuthenticated }: HeroSectionProps) {
           </p>
 
           {/* CTAs */}
-          <div className="flex flex-wrap gap-3 mb-8">
+          <div className="flex flex-col sm:flex-row flex-wrap gap-3 mb-8">
             {isAuthenticated ? (
-              <Link to="/dashboard" className="lp-btn-primary">
-                Go to Dashboard <ArrowRight className="h-4 w-4" />
+              <Link to="/dashboard" className="lp-btn-primary w-full sm:w-auto justify-center">
+                Go to Dashboard <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             ) : (
-              <Link to="/auth" className="lp-btn-primary">
-                Get Started Free <ArrowRight className="h-4 w-4" />
+              <Link to="/auth" className="lp-btn-primary w-full sm:w-auto justify-center">
+                Get Started Free <ArrowRight className="h-4 w-4 ml-2" />
               </Link>
             )}
-            <button onClick={handleExploreClick} className="lp-btn-secondary">
-              Explore Features <ArrowDown className="h-4 w-4" />
+            <button onClick={handleExploreClick} className="lp-btn-secondary w-full sm:w-auto justify-center">
+              Explore Features <ArrowDown className="h-4 w-4 ml-2" />
             </button>
           </div>
 
@@ -114,7 +114,7 @@ export default function HeroSection({ isAuthenticated }: HeroSectionProps) {
                     <div className="w-6 h-6 rounded-lg bg-[var(--lp-accent)] flex items-center justify-center">
                       <Zap className="h-3 w-3 text-white" />
                     </div>
-                    <span className="text-xs font-bold text-white">StockFlow</span>
+                    <span className="text-xs font-bold text-[var(--lp-text)]">StockFlow</span>
                   </div>
                   {[
                     { icon: TrendingUp, label: "Dashboard", active: true },
@@ -153,7 +153,7 @@ export default function HeroSection({ isAuthenticated }: HeroSectionProps) {
                       <div key={stat.label} className="lp-stat-mini">
                         <stat.icon className={`h-3.5 w-3.5 ${stat.color} mb-1`} />
                         <p className="text-[10px] lp-text-dim">{stat.label}</p>
-                        <p className="text-sm font-bold text-white">{stat.value}</p>
+                        <p className="text-sm font-bold text-[var(--lp-text)]">{stat.value}</p>
                       </div>
                     ))}
                   </div>
@@ -216,7 +216,7 @@ export default function HeroSection({ isAuthenticated }: HeroSectionProps) {
                           className="flex justify-between text-[10px] lp-text-dim"
                         >
                           <span className="truncate">{item.name}</span>
-                          <span className="text-white font-medium">{item.amt}</span>
+                          <span className="text-[var(--lp-text)] font-medium">{item.amt}</span>
                         </div>
                       ))}
                     </div>

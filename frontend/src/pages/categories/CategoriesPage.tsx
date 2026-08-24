@@ -38,6 +38,7 @@ import {
 import type { Category } from "@/types";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
+import { createPortal } from "react-dom";
 
 const COLORS = [
   "#3b82f6", "#8b5cf6", "#10b981", "#f59e0b",
@@ -147,26 +148,28 @@ export default function CategoriesPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Categories"
-        description="Organize your products into categories"
-        breadcrumbs={[{ label: "Categories" }]}
-        actions={
-          <Button id="add-category-btn" onClick={handleOpenAdd}>
-            <Plus className="h-4 w-4" />
-            Add Category
-          </Button>
-        }
-      />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Categories"
+          description="Organize your products into categories"
+          breadcrumbs={[{ label: "Categories" }]}
+          actions={
+            <Button id="add-category-btn" onClick={handleOpenAdd}>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Category
+            </Button>
+          }
+        />
+      </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 w-full">
         <SearchBar
           id="categories-search"
           value={search}
           onChange={setSearch}
           placeholder="Search categories…"
-          className="w-full sm:w-72"
+          className="w-full md:flex-1"
         />
       </div>
 
@@ -217,9 +220,24 @@ export default function CategoriesPage() {
         </div>
       )}
 
+      {/* Mobile Floating Action Button (FAB) mounted via Portal */}
+      {createPortal(
+        <Button 
+          asChild 
+          size="icon" 
+          className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 z-[100] md:hidden"
+        >
+          <div onClick={handleOpenAdd} className="cursor-pointer flex items-center justify-center">
+            <Plus className="h-6 w-6" />
+            <span className="sr-only">Add Category</span>
+          </div>
+        </Button>,
+        document.body
+      )}
+
       {/* Add/Edit Category Modal */}
       <Dialog open={addOpen} onOpenChange={(open: boolean) => !open && handleCloseModal()}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="w-[calc(100%-24px)] md:w-full sm:max-w-md max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editCategory ? "Edit Category" : "Add Category"}</DialogTitle>
             <DialogDescription>

@@ -40,23 +40,37 @@ const bottomItems: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  mobileMenuOpen?: boolean;
+  setMobileMenuOpen?: (open: boolean) => void;
+}
+
+export function Sidebar({ mobileMenuOpen, setMobileMenuOpen }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   useAuth();
 
   return (
-    <aside
-      className={cn(
-        "relative flex flex-col h-screen bg-card border-r border-border transition-all duration-300 ease-in-out",
-        collapsed ? "w-[68px]" : "w-[var(--sidebar-width)]"
+    <>
+      {/* Mobile Backdrop */}
+      {mobileMenuOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-background/80 backdrop-blur-sm lg:hidden"
+          onClick={() => setMobileMenuOpen?.(false)}
+        />
       )}
-    >
+      <aside
+        className={cn(
+          "fixed inset-y-0 left-0 z-50 flex flex-col h-screen bg-card border-r border-border transition-transform duration-300 ease-in-out lg:relative lg:translate-x-0",
+          collapsed ? "lg:w-[68px]" : "lg:w-[var(--sidebar-width)]",
+          mobileMenuOpen ? "translate-x-0 w-[260px]" : "-translate-x-full w-[260px]"
+        )}
+      >
       {/* Logo */}
       <div className="flex items-center gap-3 px-4 py-5 border-b border-border min-h-[var(--navbar-height)]">
         <div className="flex-shrink-0 flex h-9 w-9 items-center justify-center rounded-xl bg-primary shadow-md overflow-hidden">
           <Zap className="h-5 w-5 text-primary-foreground" />
         </div>
-        {!collapsed && (
+        {(!collapsed || mobileMenuOpen) && (
           <div className="flex flex-col overflow-hidden">
             <span className="text-base font-bold text-foreground leading-none truncate">
               StockFlow
@@ -70,7 +84,7 @@ export function Sidebar() {
 
       {/* Nav Items */}
       <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
-        {!collapsed && (
+        {(!collapsed || mobileMenuOpen) && (
           <p className="px-3 mb-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             Main Menu
           </p>
@@ -80,7 +94,7 @@ export function Sidebar() {
         ))}
 
         <div className="my-3 border-t border-border" />
-        {!collapsed && (
+        {(!collapsed || mobileMenuOpen) && (
           <p className="px-3 mb-2 text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
             System
           </p>
@@ -91,7 +105,7 @@ export function Sidebar() {
       </nav>
 
       {/* Low Stock Alert */}
-      {!collapsed && (
+      {(!collapsed || mobileMenuOpen) && (
         <div className="mx-3 mb-4 p-3 rounded-xl bg-primary/10 border border-primary/30">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="h-3.5 w-3.5 text-primary" />
@@ -105,10 +119,10 @@ export function Sidebar() {
         </div>
       )}
 
-      {/* Collapse Toggle */}
+      {/* Collapse Toggle (Desktop only) */}
       <button
         onClick={() => setCollapsed(!collapsed)}
-        className="absolute -right-3.5 top-[72px] z-10 flex h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow-card hover:bg-accent transition-colors"
+        className="hidden lg:flex absolute -right-3.5 top-[72px] z-10 h-7 w-7 items-center justify-center rounded-full border border-border bg-card shadow-card hover:bg-accent transition-colors"
         aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
       >
         {collapsed ? (
@@ -118,6 +132,7 @@ export function Sidebar() {
         )}
       </button>
     </aside>
+    </>
   );
 }
 
@@ -130,6 +145,9 @@ function NavItem({
 }) {
   const Icon = item.icon;
 
+  // On mobile, force uncollapsed style in the drawer.
+  const isCollapsed = collapsed && !window.matchMedia("(max-width: 1024px)").matches;
+
   return (
     <NavLink
       to={item.href}
@@ -140,7 +158,7 @@ function NavItem({
           isActive
             ? "bg-primary/20 text-primary"
             : "text-muted-foreground hover:bg-accent/10 hover:text-foreground",
-          collapsed && "justify-center px-2"
+          isCollapsed && "justify-center px-2"
         )
       }
     >
@@ -155,10 +173,10 @@ function NavItem({
               isActive ? "text-primary" : "text-muted-foreground group-hover:text-foreground"
             )}
           />
-          {!collapsed && (
+          {!isCollapsed && (
             <span className="truncate">{item.label}</span>
           )}
-          {!collapsed && item.badge && (
+          {!isCollapsed && item.badge && (
             <Badge
               variant={(item.badgeVariant as any) ?? "default"}
               className="ml-auto text-[10px] h-5 min-w-5 flex items-center justify-center"

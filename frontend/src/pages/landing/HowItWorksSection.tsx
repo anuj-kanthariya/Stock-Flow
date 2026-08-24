@@ -61,7 +61,7 @@ export default function HowItWorksSection() {
 
               {/* Text */}
               <div className="flex-1">
-                <h3 className="text-base sm:text-lg font-semibold text-white mb-1.5">
+                <h3 className="text-base sm:text-lg font-semibold text-[var(--lp-text)] mb-1.5">
                   {step.title}
                 </h3>
                 <p className="text-sm lp-text-muted leading-relaxed">

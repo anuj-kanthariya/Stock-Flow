@@ -127,12 +127,14 @@ export default function SettingsPage() {
   const resolvedLogo = getNormalizedImageUrl(user?.company_logo_url);
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Settings"
-        description="Manage your application preferences and business configuration"
-        breadcrumbs={[{ label: "Settings" }]}
-      />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Settings"
+          description="Manage your application preferences and business configuration"
+          breadcrumbs={[{ label: "Settings" }]}
+        />
+      </div>
 
       <Tabs defaultValue="company" className="space-y-4">
         <TabsList className="flex-wrap h-auto gap-1">
@@ -239,8 +241,8 @@ export default function SettingsPage() {
                 </div>
               </div>
               <Separator />
-              <div className="flex justify-end">
-                <Button onClick={handleSaveCompany} disabled={isLoading}>
+              <div className="flex justify-end mt-6">
+                <Button onClick={handleSaveCompany} disabled={isLoading} className="w-full sm:w-auto min-w-[120px]">
                   {isLoading ? "Saving..." : "Save Changes"}
                 </Button>
               </div>

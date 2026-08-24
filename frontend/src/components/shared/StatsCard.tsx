@@ -13,6 +13,7 @@ interface StatsCardProps {
   iconBg?: string;
   className?: string;
   loading?: boolean;
+  compact?: boolean;
 }
 
 export function StatsCard({
@@ -25,6 +26,7 @@ export function StatsCard({
   iconBg = "bg-primary/10",
   className,
   loading,
+  compact = false,
 }: StatsCardProps) {
   const isPositive = change !== undefined && change > 0;
   const isNegative = change !== undefined && change < 0;
@@ -33,9 +35,9 @@ export function StatsCard({
   if (loading) {
     return (
       <Card className={cn("overflow-hidden", className)}>
-        <CardContent className="p-5">
+        <CardContent className={cn("p-5", compact && "p-3")}>
           <div className="skeleton h-4 w-24 mb-3" />
-          <div className="skeleton h-8 w-32 mb-2" />
+          <div className={cn("skeleton h-8 w-32 mb-2", compact && "h-6 w-24")} />
           <div className="skeleton h-3 w-20" />
         </CardContent>
       </Card>
@@ -49,14 +51,14 @@ export function StatsCard({
         className
       )}
     >
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between">
+      <CardContent className={cn("p-5", compact && "p-3 sm:p-4")}>
+        <div className="flex items-start justify-between gap-1">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-muted-foreground truncate">
+            <p className={cn("font-medium text-muted-foreground truncate", compact ? "text-[10px] sm:text-xs" : "text-sm")}>
               {title}
             </p>
-            <div className="mt-2 flex items-baseline gap-2 flex-wrap">
-              <span className="text-2xl font-bold text-foreground tracking-tight">
+            <div className="mt-1 sm:mt-2 flex items-baseline gap-2 flex-wrap">
+              <span className={cn("font-bold text-foreground tracking-tight break-words", compact ? "text-lg sm:text-xl" : "text-2xl")}>
                 {value}
               </span>
             </div>
@@ -79,12 +81,12 @@ export function StatsCard({
                   </span>
                 )}
                 {changeLabel && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className={cn("text-muted-foreground", compact ? "text-[9px] sm:text-[10px]" : "text-xs")}>
                     {changeLabel}
                   </span>
                 )}
                 {description && !changeLabel && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className={cn("text-muted-foreground", compact ? "text-[9px] sm:text-[10px]" : "text-xs")}>
                     {description}
                   </span>
                 )}
@@ -93,7 +95,8 @@ export function StatsCard({
           </div>
           <div
             className={cn(
-              "flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl",
+              "flex flex-shrink-0 items-center justify-center rounded-xl",
+              compact ? "h-8 w-8 sm:h-9 sm:w-9" : "h-11 w-11",
               iconBg,
               "group-hover:scale-110 transition-transform duration-200"
             )}

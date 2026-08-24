@@ -183,12 +183,14 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="My Profile"
-        description="Manage your personal information and activity"
-        breadcrumbs={[{ label: "Profile" }]}
-      />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="My Profile"
+          description="Manage your personal information and activity"
+          breadcrumbs={[{ label: "Profile" }]}
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Profile Card */}
@@ -287,11 +289,11 @@ export default function ProfilePage() {
                   </div>
                   
                   <Separator />
-                  <div className="flex justify-end">
+                  <div className="flex justify-end mt-6">
                     <Button 
                       onClick={handleSave} 
                       disabled={isSaving}
-                      className="min-w-[120px]"
+                      className="w-full sm:w-auto min-w-[120px]"
                     >
                       {isSaving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
                       {isSaving ? "Saving..." : "Save Changes"}
@@ -309,19 +311,19 @@ export default function ProfilePage() {
                 <CardContent className="p-0">
                   <div className="divide-y divide-border">
                     {invoices.map((inv) => (
-                      <div key={inv.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
+                      <div key={inv.id} className="flex flex-col sm:flex-row sm:items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors gap-3 sm:gap-0">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 shrink-0">
                             <FileText className="h-4 w-4 text-primary" />
                           </div>
-                          <div>
-                            <p className="text-sm font-medium">{inv.invoiceNumber}</p>
-                            <p className="text-xs text-muted-foreground">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{inv.invoiceNumber}</p>
+                            <p className="text-xs text-muted-foreground truncate">
                               {inv.customerName} · {formatDate(inv.createdAt)}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center justify-between sm:justify-end gap-3 w-full sm:w-auto pl-12 sm:pl-0">
                           <span className="text-sm font-semibold">{formatCurrency(inv.total)}</span>
                           <InvoiceStatusBadge status={inv.status} />
                         </div>

@@ -1,4 +1,4 @@
-import { Bell, Moon, Sun, Search } from "lucide-react";
+import { Bell, Moon, Sun, Search, Menu, MoreVertical, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -13,8 +13,11 @@ import { useTheme } from "@/contexts/ThemeContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { getNormalizedImageUrl } from "@/lib/image-utils";
+interface NavbarProps {
+  onMenuToggle?: () => void;
+}
 
-export function Navbar() {
+export function Navbar({ onMenuToggle }: NavbarProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -37,9 +40,15 @@ export function Navbar() {
   const resolvedLogo = getNormalizedImageUrl(user?.company_logo_url);
 
   return (
-    <header className="sticky top-0 z-30 flex h-[var(--navbar-height)] items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-6">
+    <header className="sticky top-0 z-30 flex h-14 md:h-[var(--navbar-height)] items-center justify-between border-b border-border bg-background/95 backdrop-blur-md px-3 md:px-6 w-full">
       {/* Left: Company Logo & Name */}
-      <div className="flex items-center gap-3 flex-1 overflow-hidden pr-4">
+      <div className="flex items-center gap-2 md:gap-3 flex-1 overflow-hidden pr-2">
+        {onMenuToggle && (
+          <Button variant="ghost" size="icon" className="lg:hidden shrink-0 h-9 w-9 -ml-1 mr-1" onClick={onMenuToggle}>
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle menu</span>
+          </Button>
+        )}
         <div className="flex-shrink-0 h-8 w-8 sm:h-9 sm:w-9 rounded-lg bg-primary/10 border border-border flex items-center justify-center overflow-hidden">
           {resolvedLogo ? (
             <img src={resolvedLogo} alt="Logo" className="h-full w-full object-contain" />
@@ -50,7 +59,7 @@ export function Navbar() {
           )}
         </div>
         <h1 
-          className="text-[20px] sm:text-[22px] font-medium text-foreground/90 tracking-tight truncate max-w-[200px] sm:max-w-xs md:max-w-md lg:max-w-lg" 
+          className="text-[16px] sm:text-[20px] md:text-[22px] font-medium text-foreground/90 tracking-tight truncate max-w-[120px] sm:max-w-xs md:max-w-md lg:max-w-lg" 
           title={user?.company_name || "My Business"}
         >
           {user?.company_name || "My Business"}
@@ -58,12 +67,15 @@ export function Navbar() {
       </div>
 
       {/* Right: Actions */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1 md:gap-2">
         {/* Search */}
         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-foreground">
           <Search className="h-4.5 w-4.5" />
           <span className="sr-only">Search</span>
         </Button>
+
+        {/* Desktop Only: Notifications & Theme */}
+        <div className="hidden md:flex items-center gap-2">
         {/* Notifications */}
         <Button variant="ghost" size="icon" className="relative" id="navbar-notifications">
           <Bell className="h-4.5 w-4.5" />
@@ -86,9 +98,11 @@ export function Navbar() {
             <Moon className="h-4.5 w-4.5" />
           )}
         </Button>
+        </div>
 
-        {/* User Menu */}
-        <DropdownMenu>
+        {/* User Menu (Desktop) */}
+        <div className="hidden md:block">
+          <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <button
               id="navbar-user-menu"
@@ -127,14 +141,60 @@ export function Navbar() {
               </DropdownMenuItem>
             )}
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              danger
-              onClick={handleLogout}
-            >
-              Log out
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+              <DropdownMenuItem
+                danger
+                onClick={handleLogout}
+              >
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+
+        {/* 3-Dot Menu (Mobile) */}
+        <div className="md:hidden">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="More options">
+                <MoreVertical className="h-5 w-5 text-muted-foreground" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+              <DropdownMenuLabel className="font-normal text-xs text-muted-foreground uppercase tracking-wider">
+                Menu
+              </DropdownMenuLabel>
+              <DropdownMenuItem>
+                <Bell className="mr-2 h-4 w-4" /> Notifications
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={toggleTheme}>
+                {resolvedTheme === "dark" ? <Sun className="mr-2 h-4 w-4" /> : <Moon className="mr-2 h-4 w-4" />}
+                {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => navigate("/profile")}>
+                <div className="flex items-center w-full">
+                  <Avatar className="h-5 w-5 mr-2">
+                    <AvatarImage src={resolvedAvatar} />
+                    <AvatarFallback className="text-[9px]">{initials}</AvatarFallback>
+                  </Avatar>
+                  Profile
+                </div>
+              </DropdownMenuItem>
+              {user?.role === "owner" && (
+                <DropdownMenuItem onClick={() => navigate("/settings")}>
+                  <Settings className="mr-2 h-4 w-4" /> Settings
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                danger
+                onClick={handleLogout}
+              >
+                Log out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
     </header>
   );

@@ -4,17 +4,17 @@
 
 /* ── Landing Dark Theme ─────────────────────────────────── */
 .landing-page {
-  --lp-bg: #0D0D0D;
-  --lp-card: #171717;
-  --lp-card-secondary: #1D1D1D;
-  --lp-accent: hsl(29, 68%, 47%);
-  --lp-accent-light: hsl(29, 68%, 55%);
-  --lp-accent-glow: hsla(29, 68%, 47%, 0.15);
-  --lp-text: #FFFFFF;
-  --lp-text-muted: #A1A1AA;
-  --lp-text-dim: #71717A;
-  --lp-border: rgba(255, 255, 255, 0.08);
-  --lp-border-accent: rgba(255, 255, 255, 0.12);
+  --lp-bg: hsl(var(--background));
+  --lp-card: hsl(var(--card));
+  --lp-card-secondary: hsl(var(--secondary));
+  --lp-accent: hsl(var(--primary));
+  --lp-accent-light: hsl(var(--primary));
+  --lp-accent-glow: hsla(var(--primary) / 0.15);
+  --lp-text: hsl(var(--foreground));
+  --lp-text-muted: hsl(var(--muted-foreground));
+  --lp-text-dim: hsl(var(--muted-foreground));
+  --lp-border: hsl(var(--border));
+  --lp-border-accent: hsl(var(--ring));
 
   background-color: var(--lp-bg);
   color: var(--lp-text);
@@ -27,11 +27,13 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 80px 24px;
+  scroll-margin-top: 24px;
 }
 
 @media (max-width: 768px) {
   .lp-section {
-    padding: 56px 16px;
+    padding: 32px 16px;
+    scroll-margin-top: 72px;
   }
 }
 
@@ -78,7 +80,7 @@
 }
 
 .lp-navbar.scrolled {
-  background-color: rgba(13, 13, 13, 0.85);
+  background-color: hsl(var(--background) / 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   box-shadow: 0 1px 0 var(--lp-border);

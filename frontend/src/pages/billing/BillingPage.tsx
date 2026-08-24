@@ -296,31 +296,34 @@ export default function BillingPage() {
   };
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title={invoiceId ? "Edit Draft Invoice" : "New Invoice"}
-        description={`Invoice #${invoiceNo}`}
-        breadcrumbs={[{ label: "Billing" }]}
-        actions={
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => handleCreate("draft")} disabled={invoiceMutation.isPending}>
-              {invoiceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
-              Save Draft
-            </Button>
-            <Button
-              onClick={() => handleCreate("pending")}
-              disabled={invoiceMutation.isPending}
-            >
-              {invoiceMutation.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
-              ) : (
-                <Receipt className="h-4 w-4 mr-2" />
-              )}
-              {invoiceId ? "Finalize Invoice" : "Create Invoice"}
-            </Button>
-          </div>
-        }
-      />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title={invoiceId ? "Edit Draft Invoice" : "New Invoice"}
+          description={`Invoice #${invoiceNo}`}
+          breadcrumbs={[{ label: "Billing" }]}
+          actions={
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" onClick={() => handleCreate("draft")} disabled={invoiceMutation.isPending} className="flex-1 sm:flex-none">
+                {invoiceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+                Save Draft
+              </Button>
+              <Button
+                onClick={() => handleCreate("pending")}
+                disabled={invoiceMutation.isPending}
+                className="flex-1 sm:flex-none"
+              >
+                {invoiceMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <Receipt className="h-4 w-4 mr-2" />
+                )}
+                {invoiceId ? "Finalize Invoice" : "Create Invoice"}
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Left: Products & Items */}
@@ -409,33 +412,92 @@ export default function BillingPage() {
                   </p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/30">
-                        {["Product", "Qty", "Unit Price", "Total", ""].map(
-                          (h) => (
-                            <th
-                              key={h}
-                              className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap"
-                            >
-                              {h}
-                            </th>
-                          )
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {items.map((item) => {
-                        const qty = parseInt(item.qtyString) || 0;
-                        const lineTotal = item.unitPrice * qty;
-                        return (
-                          <tr key={item.id} className="hover:bg-muted/20">
-                            <td className="px-4 py-3 text-sm font-medium min-w-[200px] max-w-[250px]">
-                              <p className="truncate" title={item.productName}>{item.productName}</p>
+                <>
+                  <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/30">
+                          {["Product", "Qty", "Unit Price", "Total", ""].map(
+                            (h) => (
+                              <th
+                                key={h}
+                                className="px-4 py-2.5 text-left text-xs font-semibold text-muted-foreground uppercase whitespace-nowrap"
+                              >
+                                {h}
+                              </th>
+                            )
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {items.map((item) => {
+                          const qty = parseInt(item.qtyString) || 0;
+                          const lineTotal = item.unitPrice * qty;
+                          return (
+                            <tr key={item.id} className="hover:bg-muted/20">
+                              <td className="px-4 py-3 text-sm font-medium min-w-[200px] max-w-[250px]">
+                                <p className="truncate" title={item.productName}>{item.productName}</p>
+                                <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
+                              </td>
+                              <td className="px-4 py-3">
+                                <Input
+                                  type="text"
+                                  inputMode="numeric"
+                                  pattern="[0-9]*"
+                                  value={item.qtyString}
+                                  onFocus={(e) => e.target.select()}
+                                  onChange={(e) => updateItemQtyString(item.id, e.target.value)}
+                                  onBlur={() => onQtyBlur(item.id)}
+                                  className="w-20 h-8 text-center"
+                                />
+                              </td>
+                              <td className="px-4 py-3 text-sm whitespace-nowrap">
+                                {formatCurrency(item.unitPrice)}
+                              </td>
+                              <td className="px-4 py-3 text-sm font-semibold whitespace-nowrap">
+                                {formatCurrency(lineTotal)}
+                              </td>
+                              <td className="px-4 py-3 text-right">
+                                <Button
+                                  variant="ghost"
+                                  size="icon-sm"
+                                  onClick={() => removeItem(item.id)}
+                                >
+                                  <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Mobile Items List */}
+                  <div className="flex flex-col md:hidden">
+                    {items.map((item) => {
+                      const qty = parseInt(item.qtyString) || 0;
+                      const lineTotal = item.unitPrice * qty;
+                      return (
+                        <div key={item.id} className="p-4 border-b border-border/50 last:border-0 flex flex-col gap-3">
+                          <div className="flex justify-between items-start gap-2">
+                            <div className="min-w-0 flex-1">
+                              <p className="font-medium text-foreground truncate">{item.productName}</p>
                               <p className="text-xs text-muted-foreground font-mono">{item.sku}</p>
-                            </td>
-                            <td className="px-4 py-3">
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              onClick={() => removeItem(item.id)}
+                              className="h-7 w-7 text-destructive hover:bg-destructive/10 shrink-0"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                          
+                          <div className="flex items-center justify-between mt-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-muted-foreground">Qty:</span>
                               <Input
                                 type="text"
                                 inputMode="numeric"
@@ -444,30 +506,19 @@ export default function BillingPage() {
                                 onFocus={(e) => e.target.select()}
                                 onChange={(e) => updateItemQtyString(item.id, e.target.value)}
                                 onBlur={() => onQtyBlur(item.id)}
-                                className="w-20 h-8 text-center"
+                                className="w-16 h-8 text-center text-sm px-2"
                               />
-                            </td>
-                            <td className="px-4 py-3 text-sm whitespace-nowrap">
-                              {formatCurrency(item.unitPrice)}
-                            </td>
-                            <td className="px-4 py-3 text-sm font-semibold whitespace-nowrap">
-                              {formatCurrency(lineTotal)}
-                            </td>
-                            <td className="px-4 py-3 text-right">
-                              <Button
-                                variant="ghost"
-                                size="icon-sm"
-                                onClick={() => removeItem(item.id)}
-                              >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="font-semibold text-primary">{formatCurrency(lineTotal)}</p>
+                              <p className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)} each</p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </>
               )}
             </CardContent>
           </Card>
@@ -659,6 +710,26 @@ export default function BillingPage() {
             </CardContent>
           </Card>
         </div>
+      </div>
+
+      {/* Mobile action buttons (fixed at bottom on mobile) */}
+      <div className="md:hidden fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 p-4 bg-background border-t border-border z-40 flex gap-3 shadow-[0_-4px_10px_rgba(0,0,0,0.05)]">
+        <Button variant="outline" onClick={() => handleCreate("draft")} disabled={invoiceMutation.isPending} className="flex-1">
+          {invoiceMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+          Save Draft
+        </Button>
+        <Button
+          onClick={() => handleCreate("pending")}
+          disabled={invoiceMutation.isPending}
+          className="flex-1"
+        >
+          {invoiceMutation.isPending ? (
+            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+          ) : (
+            <Receipt className="h-4 w-4 mr-2" />
+          )}
+          {invoiceId ? "Finalize" : "Create"}
+        </Button>
       </div>
     </div>
   );

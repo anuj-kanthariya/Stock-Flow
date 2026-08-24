@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Eye, Download, Receipt, Loader2, AlertCircle, Trash2, ChevronDown, Pencil } from "lucide-react";
+import { Eye, Download, Receipt, Loader2, AlertCircle, Trash2, ChevronDown, Pencil, Plus } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { SearchBar } from "@/components/shared/SearchBar";
 import { DataTable } from "@/components/shared/DataTable";
@@ -35,6 +35,7 @@ import type { Invoice, InvoiceStatus } from "@/types";
 import { toast } from "sonner";
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { getInvoices, updateInvoiceStatus, deleteInvoice, downloadInvoicePdf } from "@/lib/api/invoices";
+import { createPortal } from "react-dom";
 
 const PAGE_SIZE = 8;
 const STATUS_FILTERS: { label: string; value: InvoiceStatus | "all" }[] = [
@@ -113,19 +114,21 @@ export default function InvoicesPage() {
   });
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Invoices"
-        description="Manage and track all your invoices"
-        breadcrumbs={[{ label: "Invoices" }]}
-      />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Invoices"
+          description="Manage and track all your invoices"
+          breadcrumbs={[{ label: "Invoices" }]}
+        />
+      </div>
 
       {/* Filters */}
       <div className="flex flex-col md:flex-row items-start md:items-center gap-3 w-full">
         <SearchBar
           id="invoices-search"
           value={search}
-          onChange={(v) => { setSearch(v); setPage(1); }}
+          onChange={(v: string) => { setSearch(v); setPage(1); }}
           placeholder="Search by invoice # or customer…"
           className="w-full md:w-80"
         />
@@ -409,7 +412,7 @@ export default function InvoicesPage() {
       {/* Invoice Detail Modal */}
       <Dialog open={!!selectedInvoice} onOpenChange={() => setSelectedInvoice(null)}>
         {selectedInvoice && (
-          <DialogContent className="w-[95vw] max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-xl sm:rounded-lg mx-auto top-[5%] translate-y-0 sm:top-[50%] sm:-translate-y-[50%]">
+          <DialogContent className="w-[calc(100%-24px)] md:w-[95vw] max-w-xl max-h-[90vh] overflow-y-auto p-4 sm:p-6 rounded-xl sm:rounded-lg mx-auto top-[5%] translate-y-0 sm:top-[50%] sm:-translate-y-[50%]">
             <DialogHeader>
               <DialogTitle className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pr-6">
                 <span>{selectedInvoice.invoiceNumber}</span>
@@ -511,6 +514,21 @@ export default function InvoicesPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Mobile Floating Action Button (FAB) mounted via Portal */}
+      {createPortal(
+        <Button 
+          asChild 
+          size="icon" 
+          className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 z-[100] md:hidden"
+        >
+          <div onClick={() => navigate("/billing")} className="cursor-pointer flex items-center justify-center">
+            <Plus className="h-6 w-6" />
+            <span className="sr-only">New Invoice</span>
+          </div>
+        </Button>,
+        document.body
+      )}
     </div>
   );
 }

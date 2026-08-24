@@ -74,7 +74,7 @@ export default function FeaturesSection() {
               <div className="lp-icon-box mb-4">
                 <Icon className="h-5 w-5 text-[var(--lp-accent)]" />
               </div>
-              <h3 className="text-lg font-semibold text-white mb-2">{title}</h3>
+              <h3 className="text-lg font-semibold text-[var(--lp-text)] mb-2">{title}</h3>
               <p className="text-sm lp-text-muted leading-relaxed">
                 {description}
               </p>

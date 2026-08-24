@@ -30,7 +30,7 @@ export default function LandingFooter() {
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--lp-accent)]">
                 <Zap className="h-4 w-4 text-white" />
               </div>
-              <span className="text-base font-bold text-white">StockFlow</span>
+              <span className="text-base font-bold text-[var(--lp-text)]">StockFlow</span>
             </div>
             <p className="text-sm lp-text-muted leading-relaxed max-w-xs">
               Smart inventory & billing management for growing businesses.
@@ -39,14 +39,14 @@ export default function LandingFooter() {
 
           {/* Product */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Product</h4>
+            <h4 className="text-sm font-semibold text-[var(--lp-text)] mb-4">Product</h4>
             <ul className="space-y-2.5">
               {productLinks.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
                     onClick={(e) => handleAnchorClick(e, link.href)}
-                    className="text-sm lp-text-muted hover:text-white transition-colors no-underline"
+                    className="text-sm lp-text-muted hover:text-[var(--lp-text)] transition-colors no-underline"
                   >
                     {link.label}
                   </a>
@@ -57,14 +57,14 @@ export default function LandingFooter() {
 
           {/* Company */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Company</h4>
+            <h4 className="text-sm font-semibold text-[var(--lp-text)] mb-4">Company</h4>
             <ul className="space-y-2.5">
               {companyLinks.map((link) => (
                 <li key={link.label}>
                   <a
                     href={link.href}
                     onClick={(e) => handleAnchorClick(e, link.href)}
-                    className="text-sm lp-text-muted hover:text-white transition-colors no-underline"
+                    className="text-sm lp-text-muted hover:text-[var(--lp-text)] transition-colors no-underline"
                   >
                     {link.label}
                   </a>
@@ -75,7 +75,7 @@ export default function LandingFooter() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-sm font-semibold text-white mb-4">Legal</h4>
+            <h4 className="text-sm font-semibold text-[var(--lp-text)] mb-4">Legal</h4>
             <ul className="space-y-2.5">
               <li>
                 <span className="text-sm lp-text-dim cursor-default">

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Pencil, Trash2, Users, Mail, Phone, Building2, Search, Loader2, Check } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { DataTable } from "@/components/shared/DataTable";
+import { SearchBar } from "@/components/shared/SearchBar";
 import { EmptyState } from "@/components/shared/EmptyState";
 import { Pagination } from "@/components/shared/Pagination";
 import { Button } from "@/components/ui/button";
@@ -31,10 +32,7 @@ import {
 } from "@/lib/api/customers";
 import { useGoogleContacts, GoogleContact } from "@/hooks/useGoogleContacts";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-
-
-
-export default function CustomersPage() {
+import { createPortal } from "react-dom";export default function CustomersPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [addOpen, setAddOpen] = useState(false);
@@ -233,39 +231,38 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="space-y-5">
-            <PageHeader
-              title="Customers"
-              description={
-                search
-                  ? `${totalItems} customer${totalItems === 1 ? "" : "s"} found`
-                  : `${totalItems} relevant customer${totalItems === 1 ? "" : "s"}`
-              }
-              breadcrumbs={[{ label: "Customers" }]}
-              actions={
-                <div className="flex items-center gap-2.5 flex-wrap">
-
-
-                  <Button id="add-customer-btn" onClick={() => { setFormData({}); setAddOpen(true); }}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Customer
-                  </Button>
-                </div>
-              }
-            />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Customers"
+          description={
+            search
+              ? `${totalItems} customer${totalItems === 1 ? "" : "s"} found`
+              : `${totalItems} relevant customer${totalItems === 1 ? "" : "s"}`
+          }
+          breadcrumbs={[{ label: "Customers" }]}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              <Button id="add-customer-btn" onClick={() => setAddOpen(true)} className="w-full sm:w-auto">
+                <Plus className="h-4 w-4 mr-2" />
+                Add Customer
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
             <div className="flex items-center gap-3 flex-wrap justify-between">
-              <div className="relative w-full sm:w-80">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input 
+              {/* Filters */}
+              <div className="flex items-center gap-3 w-full">
+                <SearchBar
+                  id="customers-search"
                   value={search}
-                  onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-                  placeholder="Search by name, email or company…"
-                  className="pl-9"
+                  onChange={(v: string) => { setSearch(v); setPage(1); }}
+                  placeholder="Search by name, email, or phone..."
+                  className="w-full md:flex-1"
                 />
               </div>
-              
-              <div></div>
             </div>
 
 
@@ -283,8 +280,10 @@ export default function CustomersPage() {
               </div>
             ) : (
               <>
-                <DataTable<Customer>
-                  columns={[
+                {/* Desktop Table View */}
+                <div className="hidden md:block">
+                  <DataTable<Customer>
+                    columns={[
                     {
                       key: "name",
                       header: "Customer",
@@ -417,21 +416,77 @@ export default function CustomersPage() {
                   ]}
                   data={customers}
                   keyExtractor={(row) => row.id}
-                  emptyState={
+                />
+              </div>
+
+                {/* Mobile Card List View */}
+                <div className="md:hidden flex flex-col gap-3">
+                  {customers.length === 0 ? (
                     <EmptyState
                       icon={<Users className="h-8 w-8 text-muted-foreground" />}
                       title={search ? "No customers match your search" : "No customers"}
                       description={search ? "Try a different search term or search by phone/email." : "Customers will automatically appear here once an invoice is created or when added to main list."}
-                      action={
-                        <div className="flex gap-3">
-                          <Button onClick={() => { setFormData({}); setAddOpen(true); }}>
-                            <Plus className="h-4 w-4 mr-2" /> Add Customer
-                          </Button>
-                        </div>
-                      }
+                      /* Action intentionally omitted; handled by FAB */
                     />
-                  }
-                />
+                  ) : (
+                    customers.map((customer: Customer) => (
+                      <div key={customer.id} className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+                        <div className="flex items-start gap-3">
+                          <Avatar className="h-10 w-10 flex-shrink-0 border border-border">
+                            <AvatarFallback className="text-sm font-semibold bg-primary/10 text-primary">
+                              {getInitials(customer.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-foreground truncate">{customer.name}</p>
+                            {customer.company && (
+                              <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5 truncate">
+                                <Building2 className="h-3 w-3 shrink-0" />
+                                {customer.company}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col gap-1.5 pt-2">
+                          {customer.mobileNumber && (
+                            <p className="flex items-center gap-2 text-sm text-foreground">
+                              <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <span className="truncate">{customer.mobileNumber}</span>
+                            </p>
+                          )}
+                          {customer.phone && (
+                            <p className="flex items-center gap-2 text-sm text-foreground">
+                              <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                              <span>{customer.phone}</span>
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center justify-between mt-2 pt-3 border-t border-border/50">
+                          <div className="flex flex-col">
+                            <span className="text-xs text-muted-foreground">Total Spent</span>
+                            <span className="text-sm font-bold text-primary">{formatCurrency(customer.totalSpent)}</span>
+                          </div>
+                          
+                          <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" onClick={(e) => { e.stopPropagation(); toast.success("Edit coming soon!"); }} className="h-8 w-8">
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={(e) => { 
+                              e.stopPropagation(); 
+                              if(confirm("Are you sure you want to delete this customer?")) {
+                                deleteMutation.mutate(customer.id);
+                              }
+                            }} className="h-8 w-8 text-destructive hover:text-destructive">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
 
                 {totalItems > PAGE_SIZE && (
                   <Pagination
@@ -445,12 +500,23 @@ export default function CustomersPage() {
               </>
             )}
 
-            
-
-            
+            {/* Mobile Floating Action Button (FAB) mounted via Portal */}
+            {createPortal(
+              <Button 
+                asChild 
+                size="icon" 
+                className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 z-[100] md:hidden"
+              >
+                <div onClick={() => { setFormData({}); setAddOpen(true); }} className="cursor-pointer flex items-center justify-center">
+                  <Plus className="h-6 w-6" />
+                  <span className="sr-only">Add Customer</span>
+                </div>
+              </Button>,
+              document.body
+            )}
             {/* Add Customer Modal */}
             <Dialog open={addOpen} onOpenChange={setAddOpen}>
-              <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
+              <DialogContent className="w-[calc(100%-24px)] md:w-full sm:max-w-lg max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Add Customer</DialogTitle>
                   <DialogDescription>
@@ -466,7 +532,7 @@ export default function CustomersPage() {
 
                   <TabsContent value="manual" className="space-y-4 mt-4">
                     <div className="grid gap-4 py-2">
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="cust-name">Full Name *</Label>
                           <Input 
@@ -486,7 +552,7 @@ export default function CustomersPage() {
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="cust-mobileNumber">Email</Label>
                           <Input 
@@ -516,7 +582,7 @@ export default function CustomersPage() {
                           placeholder="" 
                         />
                       </div>
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5">
                           <Label htmlFor="cust-city">City</Label>
                           <Input 

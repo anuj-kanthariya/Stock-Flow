@@ -39,6 +39,7 @@ import type { Product, Category } from "@/types";
 import { toast } from "sonner";
 import { ExcelImportModal } from "./ExcelImportModal";
 import { Upload } from "lucide-react";
+import { createPortal } from "react-dom";
 
 const PAGE_SIZE = 8;
 
@@ -105,57 +106,88 @@ export default function ProductsPage() {
   const pageTitle = currentCategoryObj ? `Products > ${currentCategoryObj.name}` : "Products";
 
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title={pageTitle}
-        description={`${formatNumber(meta.total)} products in your inventory`}
-        breadcrumbs={[{ label: "Products" }]}
-        actions={
-          <div className="flex items-center gap-2">
-            {selectedCategory !== "all" && (
-              <Button variant="outline" onClick={() => handleCategoryChange("all")}>
-                Clear Filter
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full">
+      <div className="hidden md:block">
+        <PageHeader
+          title={pageTitle}
+          description={`${formatNumber(meta.total)} products in your inventory`}
+          breadcrumbs={[{ label: "Products" }]}
+          actions={
+            <div className="flex flex-wrap items-center gap-2">
+              {selectedCategory !== "all" && (
+                <Button variant="outline" onClick={() => handleCategoryChange("all")}>
+                  Clear Filter
+                </Button>
+              )}
+              <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
+                <Upload className="h-4 w-4 mr-2" />
+                Import Excel
               </Button>
-            )}
-            <Button variant="secondary" onClick={() => setIsImportModalOpen(true)}>
-              <Upload className="h-4 w-4 mr-2" />
-              Import Excel
-            </Button>
-            <Button id="add-product-btn" onClick={() => navigate("/products/add")}>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Product
-            </Button>
-          </div>
-        }
-      />
+              <Button id="add-product-btn" onClick={() => navigate("/products/add")}>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Product
+              </Button>
+            </div>
+          }
+        />
+      </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-3">
+      {/* Filters & Actions */}
+      <div className="flex flex-col md:flex-row items-center gap-3 w-full">
+        {/* Search */}
         <SearchBar
           id="products-search"
           value={search}
-          onChange={(v) => { setSearch(v); setPage(1); }}
+          onChange={(v: string) => { setSearch(v); setPage(1); }}
           placeholder="Search by name or SKU..."
-          className="w-full sm:w-80"
+          className="w-full md:flex-1"
         />
-        <Select 
-          value={selectedCategory} 
-          onValueChange={handleCategoryChange}
-        >
-          <SelectTrigger className="w-full sm:w-48 bg-card">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Categories</SelectItem>
-            {categories.map((c: Category) => (
-              <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Badge variant="secondary" className="h-9 px-3 text-sm font-medium ml-auto hidden sm:flex">
-          {meta.total} results
-        </Badge>
+        
+        {/* Mobile secondary row: Category Filter + Actions */}
+        <div className="flex w-full md:w-auto items-center gap-2">
+          <Select 
+            value={selectedCategory} 
+            onValueChange={handleCategoryChange}
+          >
+            <SelectTrigger className="w-full md:w-48 bg-card h-10">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Categories</SelectItem>
+              {categories.map((c: Category) => (
+                <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* Mobile Import Excel Icon Button */}
+          <Button 
+            variant="outline" 
+            size="icon" 
+            className="md:hidden h-10 w-10 shrink-0" 
+            onClick={() => setIsImportModalOpen(true)}
+            title="Import Excel"
+          >
+            <Upload className="h-4.5 w-4.5" />
+          </Button>
+
+          {/* Mobile Clear Filter Icon Button */}
+          {selectedCategory !== "all" && (
+            <Button 
+              variant="outline" 
+              className="md:hidden h-10 px-3 text-xs shrink-0" 
+              onClick={() => handleCategoryChange("all")}
+            >
+              Clear
+            </Button>
+          )}
+
+          <Badge variant="secondary" className="h-9 px-3 text-sm font-medium ml-auto hidden md:flex">
+            {meta.total} results
+          </Badge>
+        </div>
       </div>
+
 
       {/* Table / Loading State */}
       {isLoading ? (
@@ -168,8 +200,11 @@ export default function ProductsPage() {
           <p>Failed to load products. Please try again.</p>
         </div>
       ) : (
-        <DataTable<Product>
-          columns={[
+        <>
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <DataTable<Product>
+              columns={[
             {
               key: "name",
               header: "Product",
@@ -298,10 +333,79 @@ export default function ProductsPage() {
             />
           }
         />
+          </div>
+
+          {/* Mobile Card List View */}
+          <div className="md:hidden flex flex-col gap-3 pb-24">
+            {products.length === 0 ? (
+              <EmptyState
+                icon={<Package className="h-8 w-8 text-muted-foreground" />}
+                title="No products found"
+                description={
+                  search
+                    ? "No products match your search. Try adjusting it."
+                    : selectedCategory !== "all"
+                    ? "No products found in this category."
+                    : "Get started by adding your first product."
+                }
+                /* Intentionally omitting 'action' on mobile as the FAB is always present */
+              />
+            ) : (
+              products.map((product: Product) => (
+                <div key={product.id} className="bg-card border border-border rounded-xl p-4 flex flex-col gap-3 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <div className="h-12 w-12 rounded-md bg-accent flex items-center justify-center flex-shrink-0 border border-border overflow-hidden">
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" />
+                      ) : (
+                        <ImageOff className="h-5 w-5 text-muted-foreground" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-foreground truncate">{product.name}</p>
+                      <p className="text-xs text-muted-foreground font-mono truncate">SKU: {product.sku}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <Badge variant="secondary" className="text-[10px]">{product.categoryName}</Badge>
+                        {product.brand && <span className="text-[10px] text-muted-foreground truncate">{product.brand}</span>}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between mt-1 pt-3 border-t border-border/50">
+                    <div className="flex flex-col">
+                      <span className="text-sm font-semibold">{formatCurrency(product.sellingPrice)}</span>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <span className="text-xs text-muted-foreground">Stock:</span>
+                        <span className={`text-sm font-medium ${(product.stockQuantity ?? 0) <= (product.minimumStock ?? 10) ? "text-destructive font-semibold" : ""}`}>
+                          {product.stockQuantity ?? 0}
+                        </span>
+                        {(product.stockQuantity ?? 0) <= (product.minimumStock ?? 10) && (
+                          <Badge variant="destructive" className="text-[9px] px-1 h-3.5">Low</Badge>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button variant="ghost" size="icon" onClick={() => setViewProduct(product)} className="h-8 w-8">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => navigate(`/products/${product.id}/edit`)} className="h-8 w-8">
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setProductToDelete(product)} className="h-8 w-8 text-destructive hover:text-destructive">
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </>
       )}
 
-      {/* Pagination */}
-      {!isLoading && meta.totalPages > 1 && (
+      {/* Pagination wrapper for mobile */}
+      <div className="mt-auto pt-4 flex w-full justify-center md:justify-start">
         <Pagination
           page={page}
           totalPages={meta.totalPages}
@@ -309,6 +413,21 @@ export default function ProductsPage() {
           limit={PAGE_SIZE}
           onPageChange={setPage}
         />
+      </div>
+
+      {/* Mobile Floating Action Button (FAB) mounted via Portal */}
+      {createPortal(
+        <Button 
+          asChild 
+          size="icon" 
+          className="fixed right-4 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] h-14 w-14 rounded-full shadow-xl bg-primary text-primary-foreground hover:bg-primary/90 z-[100] md:hidden"
+        >
+          <div onClick={() => navigate("/products/add")} className="cursor-pointer flex items-center justify-center">
+            <Plus className="h-6 w-6" />
+            <span className="sr-only">Add Product</span>
+          </div>
+        </Button>,
+        document.body
       )}
 
       {/* Delete Confirmation */}
@@ -335,7 +454,7 @@ export default function ProductsPage() {
 
       {/* View Details Modal */}
       <Dialog open={!!viewProduct} onOpenChange={(open) => !open && setViewProduct(null)}>
-        <DialogContent className="sm:max-w-xl">
+        <DialogContent className="w-[calc(100%-24px)] md:w-full sm:max-w-xl max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Product Details</DialogTitle>
           </DialogHeader>
@@ -361,7 +480,7 @@ export default function ProductsPage() {
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                   <div>
                     <p className="text-muted-foreground mb-1">SKU</p>
                     <p className="font-mono">{viewProduct.sku}</p>

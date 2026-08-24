@@ -83,7 +83,7 @@ export default function DashboardShowcase({
                     <div className="w-5 h-5 rounded-md bg-[var(--lp-accent)] flex items-center justify-center">
                       <Zap className="h-2.5 w-2.5 text-white" />
                     </div>
-                    <span className="text-[10px] font-bold text-white">
+                    <span className="text-[10px] font-bold text-[var(--lp-text)]">
                       StockFlow
                     </span>
                   </div>
@@ -153,7 +153,7 @@ export default function DashboardShowcase({
                           )}
                         </div>
                         <p className="text-[9px] lp-text-dim">{stat.label}</p>
-                        <p className="text-xs font-bold text-white">
+                        <p className="text-xs font-bold text-[var(--lp-text)]">
                           {stat.value}
                         </p>
                       </div>
@@ -240,7 +240,7 @@ export default function DashboardShowcase({
                           className="flex justify-between text-[9px] lp-text-dim"
                         >
                           <span className="truncate">{item.n}</span>
-                          <span className="text-white font-medium">
+                          <span className="text-[var(--lp-text)] font-medium">
                             {item.v}
                           </span>
                         </div>

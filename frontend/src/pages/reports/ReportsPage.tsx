@@ -32,15 +32,17 @@ const topProducts = [
 
 export default function ReportsPage() {
   return (
-    <div className="space-y-5">
-      <PageHeader
-        title="Reports & Analytics"
-        description="Business insights and performance metrics"
-        breadcrumbs={[{ label: "Reports" }]}
-      />
+    <div className="space-y-4 md:space-y-5 flex flex-col h-full w-full pb-24 md:pb-0">
+      <div className="hidden md:block">
+        <PageHeader
+          title="Reports & Analytics"
+          description="Business insights and performance metrics"
+          breadcrumbs={[{ label: "Reports" }]}
+        />
+      </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
         <StatsCard
           title="Revenue (Aug)"
           value={formatCurrency(6_820_000)}
@@ -77,7 +79,7 @@ export default function ReportsPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="revenue">
-        <TabsList>
+        <TabsList className="flex-wrap h-auto gap-1">
           <TabsTrigger value="revenue">Revenue</TabsTrigger>
           <TabsTrigger value="products">Products</TabsTrigger>
           <TabsTrigger value="categories">Categories</TabsTrigger>
@@ -94,12 +96,13 @@ export default function ReportsPage() {
                 <ResponsiveContainer width="100%" height={280}>
                   <BarChart data={salesData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" vertical={false} />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <XAxis dataKey="date" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} axisLine={false} tickLine={false} />
                     <YAxis
-                      tick={{ fontSize: 12 }}
+                      tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v) => `₹${(v / 100000).toFixed(1)}L`}
+                      tickFormatter={(val) => `₹${val / 1000}k`}
+                      width={40}
                     />
                     <Tooltip
                       contentStyle={{

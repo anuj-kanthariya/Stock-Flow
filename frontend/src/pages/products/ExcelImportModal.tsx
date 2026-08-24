@@ -97,7 +97,7 @@ export function ExcelImportModal({ open, onOpenChange, onSuccess }: ExcelImportM
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="w-[calc(100%-24px)] md:w-full sm:max-w-[800px] max-h-[90vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>Import Products</DialogTitle>
           <DialogDescription>

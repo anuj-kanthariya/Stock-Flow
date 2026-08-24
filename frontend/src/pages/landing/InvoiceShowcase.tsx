@@ -82,12 +82,12 @@ export default function InvoiceShowcase() {
               </div>
               {invoiceItems.map((item) => (
                 <div key={item.name} className="lp-invoice-row text-[var(--lp-text-muted)]">
-                  <span className="text-white font-medium truncate">
+                  <span className="text-[var(--lp-text)] font-medium truncate">
                     {item.name}
                   </span>
                   <span className="hide-mobile">{item.qty}</span>
                   <span>{item.price}</span>
-                  <span className="text-white">{item.total}</span>
+                  <span className="text-[var(--lp-text)]">{item.total}</span>
                 </div>
               ))}
 
@@ -95,11 +95,11 @@ export default function InvoiceShowcase() {
               <div className="p-5 space-y-2">
                 <div className="flex justify-between text-sm lp-text-muted">
                   <span>Subtotal</span>
-                  <span className="text-white">₹1,63,500</span>
+                  <span className="text-[var(--lp-text)]">₹1,63,500</span>
                 </div>
                 <div className="flex justify-between text-sm lp-text-muted">
                   <span>GST (18%)</span>
-                  <span className="text-white">₹29,430</span>
+                  <span className="text-[var(--lp-text)]">₹29,430</span>
                 </div>
                 <div className="border-t border-[var(--lp-border)] pt-2 flex justify-between text-base font-bold">
                   <span>Total</span>
